@@ -1,18 +1,68 @@
 # WhatIf AI ✳
 
-> **Don't predict the future. Explore it.**
+> **Your future isn't one straight line. Explore the possibilities.**
 
-WhatIf AI turns a decision into several possible paths, then lets you inspect their illustrative month-by-month outcomes. Gemini can generate scenario branches; a transparent rule-based engine simulates the numeric timeline.
+WhatIf AI turns a decision into several possible paths, then lets you inspect illustrative month-by-month outcomes. Gemini can generate scenario branches; a transparent, deterministic starter engine simulates the numeric timeline.
 
-## The experience
+## What you can do
 
-- **AI-assisted branching:** generate alternative scenario labels with Gemini, with local keyword rules as a fallback.
-- **Scenario-aware simulation:** compare baseline, growth, cautious and other paths using deterministic starter rates.
-- **Trajectory comparison:** view a selected metric across all branches on a chart.
-- **Explainable outputs:** inspect monthly values, change events, scenario source and assumptions.
-- **Decision-first interface:** a dark, animated multiverse-inspired UI that emphasizes exploration over prediction.
+- **Explore alternatives:** generate scenario branches with Gemini or local fallback rules.
+- **Compare trajectories:** view a selected metric across possible paths.
+- **Inspect monthly detail:** expand each path to see timeline values and change events.
+- **Understand the assumptions:** see where branches came from and how to interpret the outputs.
+- **Start with your own numbers:** optionally provide income/revenue, users/customers, and costs.
 
-> **Important:** These numbers are illustrative outputs from starter rules, not validated forecasts or financial advice. Gemini generates scenario descriptions; it does not validate the simulation's numeric rates.
+> **Important:** the numeric outputs use deterministic starter rules. They are illustrative scenario simulations, not validated forecasts or financial advice. Gemini can generate scenario descriptions; it does not calibrate the numeric rates.
+
+## Run locally on Windows
+
+### Recommended: launch both servers together
+
+Requirements: Python 3.11+ and an internet connection for the initial dependency install.
+
+1. Pull the latest code:
+   ```powershell
+   cd D:\whatif-ai\WhatIf-AI
+   git pull origin main
+   ```
+2. Run the launcher from the repository root:
+   ```powershell
+   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+   .\run-whatif.ps1
+   ```
+
+The launcher prepares pip and the backend dependencies, starts FastAPI if it is not already healthy, starts the static frontend if it is not already responding, checks both services, and opens the frontend and Swagger. Keep the two server windows open while using the app.
+
+- Frontend: http://127.0.0.1:5500
+- Backend health: http://127.0.0.1:8000/health
+- API docs (Swagger): http://127.0.0.1:8000/docs
+
+### Optional: start manually
+
+In one PowerShell window:
+```powershell
+cd D:\whatif-ai\WhatIf-AI\backend
+.\venv\Scripts\python.exe -m pip install -r requirements.txt
+.\venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+In a second PowerShell window:
+```powershell
+cd D:\whatif-ai\WhatIf-AI
+.\backend\venv\Scripts\python.exe -m http.server 5500 --directory .\frontend --bind 127.0.0.1
+```
+
+Then open http://127.0.0.1:5500.
+
+### Gemini setup (optional)
+
+For Gemini-powered branch generation, set your key in the backend terminal before starting Uvicorn:
+```powershell
+$env:GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"
+$env:GEMINI_MODEL = "gemini-3.5-flash-lite"
+```
+
+Without a key, the backend uses its local branch-generation fallback. Never commit your API key to Git.
 
 ## Repository layout
 
@@ -21,65 +71,23 @@ WhatIf-AI/
 ├── backend/
 │   ├── app/
 │   │   ├── ai/
-│   │   │   ├── decision_extractor.py
-│   │   │   └── scenario_generator.py
 │   │   ├── engine/
-│   │   │   ├── simulation.py
-│   │   │   └── state.py
 │   │   ├── main.py
 │   │   └── models.py
 │   ├── tests/
 │   └── requirements.txt
-└── frontend/
-    ├── index.html
-    ├── styles.css
-    └── app.js
+├── frontend/
+│   ├── index.html
+│   ├── styles.css
+│   └── app.js
+└── run-whatif.ps1
 ```
 
-## Requirements
-
-- Python 3.11+
-- A Gemini API key for Gemini-powered generation (optional; local branch generation remains available without it)
-- A modern browser
-
-## Run locally on Windows
-
-### 1. Configure the backend
-
-Open PowerShell in the repository root:
+## Test the backend
 
 ```powershell
-cd backend
-.env\Scripts\python.exe -m pip install -r requirements.txt
-$env:GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"
-$env:GEMINI_MODEL = "gemini-3.5-flash-lite"
-.env\Scripts\python.exe -m uvicorn app.main:app --reload
-```
-
-If you created your virtual environment with a different folder name, use that environment's Python executable. Keep the key in your terminal or a local ignored environment file—never commit it to Git.
-
-API documentation: http://127.0.0.1:8000/docs
-
-### 2. Run the frontend
-
-Open a **second** PowerShell window:
-
-```powershell
-cd D:\whatif-ai\WhatIf-AI\frontend
-python -m http.server 5500
-```
-
-Open http://127.0.0.1:5500
-
-The frontend calls the backend at `http://127.0.0.1:8000`. Both servers need to be running. To change the API base, set `window.WHATIF_API_BASE` before `app.js` loads.
-
-### 3. Run tests
-
-From the repository root:
-
-```powershell
-cd backend
-.env\Scripts\python.exe -m pytest -q
+cd D:\whatif-ai\WhatIf-AI\backend
+.\venv\Scripts\python.exe -m pytest -q
 ```
 
 ## Example request
@@ -97,25 +105,13 @@ cd backend
 }
 ```
 
-An empty `branches` array asks the backend to generate scenario branches automatically. The response's `assumptions` array identifies whether branches came from Gemini, local fallback rules, or user-supplied input.
+An empty `branches` array asks the backend to generate branches automatically. The response's assumptions identify whether branches came from Gemini, local fallback rules, or user-supplied input.
 
 ## Current limitations
 
-- The numeric simulation uses deterministic, keyword-driven starter rates.
-- A scenario label is not itself a calibrated model or evidence-based prediction.
-- State variable meanings are user-provided; use meaningful starting values for useful comparisons.
-- Browser frontend is a static app and requires the backend API to be running.
+- Numeric simulation uses deterministic, keyword-driven starter rates.
+- A scenario label is not a calibrated model or evidence-based prediction.
+- State variable meanings depend on the values supplied by the user.
+- The frontend requires the backend API; the launcher checks both services before opening the app.
 
-## Roadmap
-
-- [x] FastAPI simulation API and world-state engine
-- [x] Gemini-powered scenario generation with local fallback
-- [x] Scenario-specific starter rates and monthly explanations
-- [x] Distinctive interactive frontend and trajectory comparison
-- [x] Automated backend tests and GitHub Actions
-- [ ] Calibrated, domain-specific simulation models
-- [ ] Save and compare previous simulations
-- [ ] Branch from a prior point in a timeline
-- [ ] More robust simulation evaluation
-
-**WhatIf AI — Don't predict the future. Explore it.**
+**WhatIf AI — Explore, don't predict.**
