@@ -81,7 +81,7 @@ def simulate(request: SimulationRequest) -> SimulationResponse:
     # revenue/customer metrics on an insurance or learning decision.
     allowed_keys = {metric["key"] for metric in METRIC_CATALOG[domain]}
     allowed_keys.update({
-        "annual_premium_inr", "premium_share_of_income_pct", "cumulative_premium_paid_inr",
+        "annual_premium_inr", "premium_share_of_income_pct", "cumulative_premium_paid_inr",\n        "learning_budget_specified",
         "monthly_income_inr", "monthly_expenses_inr", "savings_inr", "monthly_surplus_inr",
         "cumulative_education_cost_inr", "cumulative_earnings_inr", "habit_sessions_completed",
         "habit_cost_inr", "upfront_cost_inr",
@@ -94,6 +94,8 @@ def simulate(request: SimulationRequest) -> SimulationResponse:
     }
     # Explicit user-entered values override extracted values.
     state = {**extracted_variables, **filtered_request_state}
+    if "learning_budget_inr" in filtered_request_state:
+        state["learning_budget_specified"] = 1.0
     months = extracted.horizon_months or request.months
 
     if request.branches:
