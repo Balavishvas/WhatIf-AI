@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "backend/**"
+      - "frontend/**"
       - ".github/workflows/backend-tests.yml"
   pull_request:
     paths:
@@ -30,3 +31,6 @@ jobs:
           pip install -r requirements.txt pytest
       - name: Run simulation tests
         run: python -m pytest -q
+      - name: Check frontend JavaScript syntax
+        working-directory: .
+        run: node --check frontend/app.js
