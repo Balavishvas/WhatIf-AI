@@ -112,15 +112,16 @@ def _fallback_extract(decision: str, months: int) -> ExtractedDecision:
     ))
     if is_learning:
         if amount is not None:
-            variables["learning_budget_remaining_inr"] = amount
+            variables["learning_budget_inr"] = amount
             assumptions.append(f"Learning budget starts at ₹{amount:,.0f}, extracted from the decision.")
         else:
-            variables["learning_budget_remaining_inr"] = 0.0
-            assumptions.append("No learning budget amount was stated; budget tracking starts at ₹0.")
+            variables["learning_budget_inr"] = 0.0
+            assumptions.append("No learning budget amount was stated; budget tracking is uncapped until a budget is supplied.")
         # These are explicit starter assumptions, not facts about the user.
         variables["study_hours_per_week"] = 6.0
         variables["projects_completed"] = 0.0
         variables["skills_practiced"] = 0.0
+        variables["learning_cost_inr"] = 0.0
         assumptions.append("Illustrative baseline: 6 study hours per week, 0 completed projects, and 0 skills practiced; edit these assumptions for a personalized model.")
     else:
         assumptions.append("No domain-specific metrics were inferred; add numeric starting values for quantitative comparisons.")
