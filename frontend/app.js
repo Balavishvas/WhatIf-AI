@@ -87,7 +87,7 @@
   }
   const INPUT_CATALOG = {
     stock_learning: [
-      ["study_hours_per_week","Study hours per week","6"],["learning_cost_inr","Learning budget (INR)",""],["paper_trading_sessions","Paper-trading sessions / month",""],["strategies_tested","Strategies to test / month",""],["concepts_practiced","Concepts to practice / month",""]
+      ["study_hours_per_week","Study hours per week","6"],["learning_budget_inr","Learning budget (INR)",""],["paper_trading_sessions","Paper-trading sessions / month",""],["strategies_tested","Strategies to test / month",""],["concepts_practiced","Concepts to practice / month",""]
     ],
     learning: [["study_hours_per_week","Study hours per week","6"],["learning_cost_inr","Learning budget (INR)",""],["projects_completed","Current project milestones","0"],["skills_practiced","Current skills practiced","0"]],
     education_career: [["education_cost_inr","Total education cost (INR)",""],["monthly_take_home_inr","Monthly take-home pay (INR)",""],["study_hours_per_week","Current study hours / week",""],["work_experience_months","Current work experience (months)","0"]],
@@ -304,7 +304,7 @@
     // dominate a learning scenario just because a budget was mentioned.
     const domain = data.domain || decisionDomain(data.decision);
     const preferredByDomain = {
-      stock_learning: ["study_hours_per_week", "paper_trading_sessions", "strategies_tested", "concepts_practiced", "learning_cost_inr"],
+      stock_learning: ["study_hours_per_week", "paper_trading_sessions", "strategies_tested", "concepts_practiced", "learning_cost_inr", "learning_budget_inr"],
       learning: ["study_hours_per_week", "projects_completed", "skills_practiced", "learning_cost_inr"],
       education_career: ["cumulative_education_cost_inr", "cumulative_earnings_inr", "study_hours_per_week", "work_experience_months"],
       vehicle: ["monthly_ownership_cost_inr", "cumulative_ownership_cost_inr", "monthly_emi_inr", "monthly_fuel_cost_inr"],
