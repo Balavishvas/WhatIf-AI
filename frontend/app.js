@@ -73,15 +73,55 @@
   }
   function decisionDomain(decision) {
     const text = String(decision || "").toLowerCase();
-    if (/join ug|undergraduate|college|degree|university|job|workforce|career/.test(text)) return "education";
-    if (/life insurance|term insurance|life cover/.test(text)) return "life";
-    if (/health insurance|medical insurance|mediclaim|hospitalization/.test(text)) return "health";
+    if (/life insurance|term insurance|life cover/.test(text)) return "life_insurance";
+    if (/health insurance|medical insurance|mediclaim|hospitalization/.test(text)) return "health_insurance";
     if (/insurance|policy premium|sum insured|deductible|co-pay|copay/.test(text)) return "insurance";
+    if (/stock market|stock-market|stock marketing|stock trading|day trading|paper trading|learn trading|learning trading|technical analysis/.test(text)) return "stock_learning";
+    if (/join ug|undergraduate|college|degree|university|get into job|workforce|study or work|study vs job/.test(text)) return "education_career";
     if (/bike|motorcycle|scooter|car|vehicle|600 ?cc|emi|fuel|commuting/.test(text)) return "vehicle";
-    if (/learn|learning|study|skill|course|project|portfolio|career|job|salary/.test(text)) return "learning";
-    if (/business|startup|customer|revenue|marketing|sales|hire/.test(text)) return "business";
+    if (/learn|learning|study|skill|course|project|portfolio|certification|education/.test(text)) return "learning";
+    if (/business|startup|customer|revenue|marketing|sales|hire|employee/.test(text)) return "business";
+    if (/income|salary|savings|saving|budget|expense|spend|debt|loan|invest/.test(text)) return "personal_finance";
+    if (/eat|food|diet|exercise|workout|habit|sleep|fasting/.test(text)) return "health_habit";
     return "general";
   }
+  const INPUT_CATALOG = {
+    stock_learning: [
+      ["study_hours_per_week","Study hours per week","6"],["learning_cost_inr","Learning budget (INR)",""],["paper_trading_sessions","Paper-trading sessions / month",""],["strategies_tested","Strategies to test / month",""],["concepts_practiced","Concepts to practice / month",""]
+    ],
+    learning: [["study_hours_per_week","Study hours per week","6"],["learning_cost_inr","Learning budget (INR)",""],["projects_completed","Current project milestones","0"],["skills_practiced","Current skills practiced","0"]],
+    education_career: [["education_cost_inr","Total education cost (INR)",""],["monthly_take_home_inr","Monthly take-home pay (INR)",""],["study_hours_per_week","Current study hours / week",""],["work_experience_months","Current work experience (months)","0"]],
+    vehicle: [["vehicle_purchase_price_inr","Vehicle price (INR)",""],["down_payment_inr","Down payment (INR)",""],["monthly_emi_inr","Monthly EMI (INR)",""],["monthly_fuel_cost_inr","Monthly fuel (INR)",""],["monthly_maintenance_cost_inr","Monthly maintenance (INR)",""],["annual_insurance_cost_inr","Annual insurance (INR)",""]],
+    life_insurance: [["monthly_premium_inr","Monthly premium (INR)",""],["coverage_amount_inr","Coverage amount (INR)",""],["monthly_income_inr","Monthly income (INR)",""]],
+    health_insurance: [["monthly_premium_inr","Monthly premium (INR)",""],["coverage_amount_inr","Sum insured (INR)",""],["deductible_inr","Deductible (INR)",""],["copay_pct","Co-pay (%)",""],["monthly_income_inr","Monthly income (INR)",""]],
+    insurance: [["monthly_premium_inr","Monthly premium (INR)",""],["coverage_amount_inr","Coverage amount (INR)",""],["monthly_income_inr","Monthly income (INR)",""]],
+    business: [["revenue","Monthly revenue",""],["customers","Customers",""],["cost","Monthly costs",""]],
+    personal_finance: [["monthly_income_inr","Monthly income (INR)",""],["monthly_expenses_inr","Monthly expenses (INR)",""],["savings_inr","Current savings (INR)",""]],
+    health_habit: [["habit_days_per_week","Planned days per week",""],["habit_sessions_completed","Sessions completed","0"],["habit_cost_inr","Habit-related cost (INR)",""]],
+    general: [["revenue","Income / revenue",""],["customers","Users / customers",""],["cost","Costs / expenses",""]]
+  };
+  let currentInputDomain = "";
+  function renderDomainInputs(force = false) {
+    const domain = decisionDomain(decisionInput.value);
+    if (!force && domain === currentInputDomain) return;
+    const previous = {};
+    $("domainInputs").querySelectorAll("[data-state-key]").forEach((input) => { if (input.value.trim() !== "") previous[input.dataset.stateKey] = input.value; });
+    currentInputDomain = domain;
+    const container = $("domainInputs");
+    container.replaceChildren();
+    (INPUT_CATALOG[domain] || INPUT_CATALOG.general).forEach(([key, label, placeholder]) => {
+      const wrapper = document.createElement("label");
+      const caption = document.createElement("span"); caption.textContent = label;
+      const input = document.createElement("input");
+      input.type = "number"; input.min = "0"; input.step = "any"; input.dataset.stateKey = key;
+      input.placeholder = placeholder || "Enter if known";
+      if (previous[key] !== undefined) input.value = previous[key];
+      wrapper.append(caption, input); container.appendChild(wrapper);
+    });
+    $("domainInputHint").textContent = "Inputs tailored to " + ({stock_learning:"stock-market learning",education_career:"education vs career",vehicle:"vehicle ownership",life_insurance:"life insurance",health_insurance:"health insurance",insurance:"insurance",learning:"learning",business:"business planning",personal_finance:"personal finance",health_habit:"habits",general:"your decision"}[domain] || domain) + ". Leave unknown values blank.";
+  }
+  renderDomainInputs();
+  decisionInput.addEventListener("input", () => renderDomainInputs());
   function detailItems(domain, decision, scenario) {
     const common = ["What assumptions would change this outcome?", "Which costs or constraints have not been supplied?", "What evidence should be checked before committing?"];
     const byDomain = {
@@ -262,7 +302,21 @@
     metricSelect.replaceChildren(new Option("Choose metric", ""));
     // Put decision-relevant progress metrics first; financial metrics should not
     // dominate a learning scenario just because a budget was mentioned.
-    const preferred = ["projects_completed", "skills_practiced", "study_hours_per_week", "learning_budget_remaining_inr"];
+    const domain = data.domain || decisionDomain(data.decision);
+    const preferredByDomain = {
+      stock_learning: ["study_hours_per_week", "paper_trading_sessions", "strategies_tested", "concepts_practiced", "learning_cost_inr"],
+      learning: ["study_hours_per_week", "projects_completed", "skills_practiced", "learning_cost_inr"],
+      education_career: ["cumulative_education_cost_inr", "cumulative_earnings_inr", "study_hours_per_week", "work_experience_months"],
+      vehicle: ["monthly_ownership_cost_inr", "cumulative_ownership_cost_inr", "monthly_emi_inr", "monthly_fuel_cost_inr"],
+      life_insurance: ["monthly_premium_inr", "coverage_amount_inr", "annual_premium_inr", "cumulative_premium_paid_inr", "premium_share_of_income_pct"],
+      health_insurance: ["monthly_premium_inr", "coverage_amount_inr", "annual_premium_inr", "cumulative_premium_paid_inr", "deductible_inr", "copay_pct"],
+      insurance: ["monthly_premium_inr", "coverage_amount_inr", "annual_premium_inr", "cumulative_premium_paid_inr"],
+      personal_finance: ["monthly_income_inr", "monthly_expenses_inr", "monthly_surplus_inr", "savings_inr"],
+      health_habit: ["habit_days_per_week", "habit_sessions_completed", "habit_cost_inr"],
+      business: ["revenue", "customers", "cost"],
+      general: ["revenue", "customers", "cost"]
+    };
+    const preferred = preferredByDomain[domain] || preferredByDomain.general;
     const orderedKeys = [...keys].sort((a, b) => {
       const ai = preferred.indexOf(a), bi = preferred.indexOf(b);
       return (ai < 0 ? preferred.length : ai) - (bi < 0 ? preferred.length : bi);
@@ -338,9 +392,9 @@
       return;
     }
     const initial_state = {};
-    [["revenue", "revenue"], ["customers", "customers"], ["cost", "cost"]].forEach(([id, key]) => {
-      const raw = $(id).value.trim();
-      if (raw !== "" && Number.isFinite(Number(raw)) && Number(raw) >= 0) initial_state[key] = Number(raw);
+    $("domainInputs").querySelectorAll("[data-state-key]").forEach((input) => {
+      const raw = input.value.trim();
+      if (raw !== "" && Number.isFinite(Number(raw)) && Number(raw) >= 0) initial_state[input.dataset.stateKey] = Number(raw);
     });
     // Remove old results immediately so a failed/new request can never look like its output.
     latestResponse = null;
