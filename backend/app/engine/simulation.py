@@ -19,7 +19,7 @@ def _decision_type(decision: str) -> str:
             return "hiring"
         if any(word in text for word in ("market", "advertis", "sales", "promotion")):
             return "marketing"
-        return "career"
+        return "business"
     if any(word in text for word in ("learn", "learning", "study", "skill", "practice", "course", "knowledge", "ai", "project", "portfolio")):
         return "learning"
     if any(word in text for word in ("invest", "budget", "spend", "cost", "expense", "save", "saving")):
@@ -214,6 +214,39 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
             updated["habit_days_per_week"] = target
             state.values["habit_days_per_week"] = target
             timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=[f"Illustrative habit target: {target:g} days per week.", "Actual health effects are individual and are not predicted."]))
+    elif decision_type == "business":
+        # Simple cash-flow scenario math. Rates are declared starter assumptions, not market forecasts.
+        state.values.setdefault("revenue", 0.0)
+        state.values.setdefault("cost", 0.0)
+        state.values.setdefault("customers", 0.0)
+        state.values.setdefault("cash_on_hand", 0.0)
+        branch_text = branch.lower()
+        if any(word in branch_text for word in ("cautious", "reduce", "delay", "risk")):
+            revenue_rate, customer_rate, cost_rate = 0.01, 0.01, -0.01
+        elif any(word in branch_text for word in ("aggressive", "optimistic", "expand", "increase", "growth")):
+            revenue_rate, customer_rate, cost_rate = 0.06, 0.07, 0.04
+        else:
+            revenue_rate, customer_rate, cost_rate = 0.03, 0.03, 0.02
+        for month in range(1, months + 1):
+            current = state.values
+            revenue_delta = current["revenue"] * revenue_rate
+            cost_delta = current["cost"] * cost_rate
+            customer_delta = current["customers"] * customer_rate
+            net_cashflow = (current["revenue"] + revenue_delta) - (current["cost"] + cost_delta)
+            updated = state.apply({
+                "revenue": revenue_delta,
+                "cost": cost_delta,
+                "customers": customer_delta,
+                "cash_on_hand": net_cashflow,
+            })
+            updated["monthly_net_cashflow"] = round(updated["revenue"] - updated["cost"], 2)
+            updated["modeled_monthly_revenue_change"] = round(revenue_delta, 2)
+            events = [
+                f"Illustrative starter rates: revenue +{revenue_rate * 100:g}% and customers +{customer_rate * 100:g}% per month.",
+                f"Illustrative cost change: {cost_rate * 100:+g}% per month; actual costs may behave differently.",
+                f"Modeled net monthly cash flow from supplied revenue and cost: ₹{updated['monthly_net_cashflow']:,.0f} (same currency units as inputs).",
+            ]
+            timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
     elif decision_type == "learning":
         text = branch.lower()
         if any(word in text for word in ("intensive", "aggressive", "commit")):
