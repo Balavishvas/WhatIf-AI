@@ -70,7 +70,8 @@ METRIC_CATALOG: dict[str, list[dict[str, str]]] = {
         {"key": "revenue", "label": "Revenue", "unit": "currency/month", "kind": "input"},
         {"key": "cost", "label": "Operating costs", "unit": "currency/month", "kind": "input"},
         {"key": "customers", "label": "Customers", "unit": "customers", "kind": "input"},
-        {"key": "cash_runway_months", "label": "Cash runway", "unit": "months", "kind": "calculated"},
+        {"key": "cash_on_hand", "label": "Cash on hand", "unit": "currency", "kind": "input"},
+        {"key": "monthly_net_cashflow", "label": "Modeled net cash flow", "unit": "currency/month", "kind": "calculated"},
     ],
     "personal_finance": [
         {"key": "monthly_income_inr", "label": "Monthly income (INR)", "unit": "INR", "kind": "input"},
