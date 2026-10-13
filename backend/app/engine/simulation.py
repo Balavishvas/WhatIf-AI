@@ -10,6 +10,10 @@ def _decision_type(decision: str) -> str:
     text = decision.lower()
     # Prioritize the core domain: "invest in learning AI" is a learning decision,
     # not a generic finance decision.
+    if any(word in text for word in ("life insurance", "term insurance", "health insurance", "medical insurance", "insurance", "policy premium", "sum insured")):
+        return "insurance"
+    if any(word in text for word in ("bike", "motorcycle", "scooter", "car", "vehicle", "600cc", "600 cc")):
+        return "vehicle"
     if any(word in text for word in ("learn", "learning", "study", "skill", "practice", "course", "knowledge", "ai", "project", "portfolio")):
         return "learning"
     if any(word in text for word in ("market", "advertis", "customer", "sales", "promotion")):
@@ -81,7 +85,33 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
     decision_type = _decision_type(decision)
     factor = _branch_factor(branch)
 
-    if decision_type == "learning":
+    text_decision = decision.lower()
+    if any(word in text_decision for word in ("bike", "motorcycle", "scooter", "car", "vehicle", "600cc", "600 cc")):
+        # Only calculate values supplied by the user or explicitly extracted.
+        # No local market prices, interest rates, insurance premiums, or mileage are invented.
+        state.values.setdefault("vehicle_purchase_price_inr", 0.0)
+        state.values.setdefault("down_payment_inr", 0.0)
+        state.values.setdefault("monthly_fuel_cost_inr", 0.0)
+        state.values.setdefault("monthly_maintenance_cost_inr", 0.0)
+        state.values.setdefault("annual_insurance_cost_inr", 0.0)
+        state.values.setdefault("monthly_emi_inr", 0.0)
+        state.values.setdefault("monthly_ownership_cost_inr", 0.0)
+        state.values.setdefault("upfront_cost_inr", 0.0)
+        state.values["upfront_cost_inr"] = max(0.0, state.values["down_payment_inr"])
+        state.values["monthly_ownership_cost_inr"] = max(0.0, state.values["monthly_fuel_cost_inr"] + state.values["monthly_maintenance_cost_inr"] + state.values["monthly_emi_inr"] + state.values["annual_insurance_cost_inr"] / 12.0)
+        preferred_vehicle = ("vehicle_purchase_price_inr", "down_payment_inr", "monthly_emi_inr", "monthly_fuel_cost_inr", "monthly_maintenance_cost_inr", "annual_insurance_cost_inr", "monthly_ownership_cost_inr", "upfront_cost_inr")
+        state.values = {key: state.values[key] for key in preferred_vehicle} | {key: value for key, value in state.values.items() if key not in preferred_vehicle}
+        for month in range(1, months + 1):
+            # Vehicle costs are treated as flat monthly budget estimates, not forecasts.
+            updated = state.apply({})
+            updated["cumulative_ownership_cost_inr"] = round(state.values["monthly_ownership_cost_inr"] * month + state.values["upfront_cost_inr"], 2)
+            state.values["cumulative_ownership_cost_inr"] = updated["cumulative_ownership_cost_inr"]
+            events = [
+                "Ownership costs use only supplied or extracted values; missing values remain ₹0 placeholders, not estimates.",
+                f"Modeled cumulative ownership cost: ₹{updated['cumulative_ownership_cost_inr']:,.0f} including stated upfront cost.",
+            ]
+            timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
+    elif decision_type == "learning":
         text = branch.lower()
         if any(word in text for word in ("intensive", "aggressive", "commit")):
             weekly_hours, project_rate, skill_rate, monthly_spend = 10.0, 0.75, 1.5, 1600.0
