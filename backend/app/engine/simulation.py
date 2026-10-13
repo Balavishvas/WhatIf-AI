@@ -8,30 +8,69 @@ from .state import WorldState
 
 def _decision_type(decision: str) -> str:
     text = decision.lower()
-
     if any(word in text for word in ("market", "advertis", "customer", "sales", "promotion")):
         return "marketing"
-    if any(word in text for word in ("invest", "budget", "spend", "cost", "expense")):
+    if any(word in text for word in ("invest", "budget", "spend", "cost", "expense", "save", "saving")):
         return "finance"
     if any(word in text for word in ("learn", "study", "skill", "practice", "course", "knowledge", "ai")):
         return "learning"
     if any(word in text for word in ("hire", "employee", "team", "staff")):
         return "hiring"
+    if any(word in text for word in ("startup", "business", "quit", "career", "job", "resign")):
+        return "career"
     return "general"
 
 
 def _branch_factor(branch: str) -> float:
+    """Translate scenario wording into a transparent multiplier for starter rates."""
     text = branch.lower()
-
-    if any(word in text for word in ("pessimistic", "worst", "risk", "avoid")):
+    if any(word in text for word in ("pessimistic", "worst", "high risk", "aggressively", "aggressive", "rapidly")):
+        return 1.5 if any(word in text for word in ("aggressively", "aggressive", "rapidly")) else -0.5
+    if any(word in text for word in ("risk", "avoid", "reduce", "delay", "cautious", "conservative")):
         return -0.5
-    if any(word in text for word in ("optimistic", "strong", "focus", "pursue", "best")):
+    if any(word in text for word in ("optimistic", "strong", "focus", "pursue", "best", "increase", "intensive")):
         return 1.5
-    if any(word in text for word in ("balanced", "realistic", "moderate")):
+    if any(word in text for word in ("balanced", "realistic", "moderate", "gradually", "part-time", "steady")):
         return 0.5
-    if "continue" in text:
+    if any(word in text for word in ("continue", "maintain", "current", "baseline", "keep")):
         return 0.0
     return 0.5
+
+
+def _monthly_rate(key: str, decision_type: str) -> float:
+    """Starter monthly rate by metric and decision domain; not a real-world forecast."""
+    name = key.lower()
+    if decision_type == "marketing":
+        if any(word in name for word in ("revenue", "sales")):
+            return 0.08
+        if any(word in name for word in ("customer", "user")):
+            return 0.10
+        if any(word in name for word in ("cost", "expense", "spend")):
+            return 0.06
+        return 0.02
+    if decision_type == "finance":
+        if any(word in name for word in ("revenue", "income", "profit")):
+            return 0.03
+        if any(word in name for word in ("cost", "expense", "debt")):
+            return -0.05
+        return 0.02
+    if decision_type == "learning":
+        return 0.10 if any(word in name for word in ("skill", "knowledge", "ai", "productivity")) else 0.02
+    if decision_type == "hiring":
+        if any(word in name for word in ("capacity", "productivity", "output")):
+            return 0.08
+        if any(word in name for word in ("cost", "expense", "salary")):
+            return 0.07
+        return 0.02
+    if decision_type == "career":
+        if any(word in name for word in ("revenue", "income", "salary", "runway", "saving", "savings")):
+            return 0.04
+        if any(word in name for word in ("cost", "expense", "burn")):
+            return 0.05
+        if any(word in name for word in ("customer", "user", "traction")):
+            return 0.04
+        return 0.02
+    return 0.03
 
 
 def _monthly_changes(
@@ -40,44 +79,9 @@ def _monthly_changes(
     factor: float,
 ) -> dict[str, float]:
     changes: dict[str, float] = {}
-
     for key, value in state.items():
-        name = key.lower()
-
-        if decision_type == "marketing":
-            if any(word in name for word in ("revenue", "sales")):
-                rate = 0.08
-            elif any(word in name for word in ("customer", "user")):
-                rate = 0.10
-            elif any(word in name for word in ("cost", "expense", "spend")):
-                rate = 0.06
-            else:
-                rate = 0.02
-        elif decision_type == "finance":
-            if any(word in name for word in ("revenue", "income", "profit")):
-                rate = 0.03
-            elif any(word in name for word in ("cost", "expense", "debt")):
-                rate = -0.05
-            else:
-                rate = 0.02
-        elif decision_type == "learning":
-            rate = (
-                0.10
-                if any(word in name for word in ("skill", "knowledge", "ai", "productivity"))
-                else 0.02
-            )
-        elif decision_type == "hiring":
-            if any(word in name for word in ("capacity", "productivity", "output")):
-                rate = 0.08
-            elif any(word in name for word in ("cost", "expense", "salary")):
-                rate = 0.07
-            else:
-                rate = 0.02
-        else:
-            rate = 0.03
-
+        rate = _monthly_rate(key, decision_type)
         changes[key] = round(value * rate * factor, 2)
-
     return changes
 
 
@@ -96,7 +100,8 @@ def simulate(
         changes = _monthly_changes(state.values, decision_type, factor)
         updated = state.apply(changes)
         events = [
-            f"{key} {'increased' if change > 0 else 'decreased' if change < 0 else 'stayed unchanged'} by {abs(change):g}"
+            f"{key} {'increased' if change > 0 else 'decreased' if change < 0 else 'stayed unchanged'} by {abs(change):g} "
+            f"(starter rate {(_monthly_rate(key, decision_type) * factor * 100):g}% for this scenario)"
             for key, change in changes.items()
         ]
         timeline.append(
@@ -112,7 +117,4 @@ def run_simulation(
     months: int,
     decision: str = "",
 ) -> list[Scenario]:
-    return [
-        simulate(initial_state, branch, months, decision)
-        for branch in branches
-    ]
+    return [simulate(initial_state, branch, months, decision) for branch in branches]
