@@ -126,16 +126,18 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
         state.values.setdefault("strategies_tested", 0.0)
         state.values.setdefault("concepts_practiced", 0.0)
         state.values.setdefault("learning_budget_inr", 0.0)
+        state.values.setdefault("learning_budget_specified", 0.0)
         state.values.setdefault("learning_cost_inr", 0.0)
         for month in range(1, months + 1):
             budget = state.values["learning_budget_inr"]
-            actual_spend = min(max(budget, 0.0), spend) if budget > 0 else spend
+            budget_specified = state.values["learning_budget_specified"] > 0
+            actual_spend = min(max(budget, 0.0), spend) if budget_specified else spend
             updated = state.apply({
                 "paper_trading_sessions": sessions,
                 "strategies_tested": strategies,
                 "concepts_practiced": concepts,
                 "learning_cost_inr": actual_spend,
-                "learning_budget_inr": -actual_spend if budget > 0 else 0.0,
+                "learning_budget_inr": -actual_spend if budget_specified else 0.0,
             })
             updated["study_hours_per_week"] = hours
             state.values["study_hours_per_week"] = hours
@@ -228,19 +230,21 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
         state.values.setdefault("projects_completed", 0.0)
         state.values.setdefault("skills_practiced", 0.0)
         state.values.setdefault("learning_budget_inr", 0.0)
+        state.values.setdefault("learning_budget_specified", 0.0)
         state.values.setdefault("learning_cost_inr", 0.0)
         # Put domain-relevant learning outcomes first for the cards and chart.
         preferred = ("projects_completed", "skills_practiced", "study_hours_per_week", "learning_cost_inr", "learning_budget_inr")
         state.values = {key: state.values[key] for key in preferred} | {key: value for key, value in state.values.items() if key not in preferred}
         for month in range(1, months + 1):
             available_budget = state.values["learning_budget_inr"]
-            actual_spend = min(max(available_budget, 0.0), monthly_spend) if available_budget > 0 else monthly_spend
+            budget_specified = state.values["learning_budget_specified"] > 0
+            actual_spend = min(max(available_budget, 0.0), monthly_spend) if budget_specified else monthly_spend
             updated = state.apply({
                 "study_hours_per_week": round(weekly_hours - state.values["study_hours_per_week"], 2),
                 "projects_completed": project_rate,
                 "skills_practiced": skill_rate,
                 "learning_cost_inr": actual_spend,
-                "learning_budget_inr": -actual_spend if available_budget > 0 else 0.0,
+                "learning_budget_inr": -actual_spend if budget_specified else 0.0,
             })
             # Study hours represent the selected routine, not a cumulative total.
             updated["study_hours_per_week"] = weekly_hours
