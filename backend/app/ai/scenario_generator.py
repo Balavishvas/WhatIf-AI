@@ -63,7 +63,7 @@ def _generate_with_gemini(decision: str, api_key: str) -> list[str] | None:
         from google import genai
 
         client = genai.Client(api_key=api_key)
-        model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
         prompt = f"""You are the scenario-ideation component of WhatIf AI.
 Generate 3 to 5 meaningfully different, concise scenario branch labels for the
 user's decision. Include a reasonable baseline and contrasting approaches where
