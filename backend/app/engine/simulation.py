@@ -125,20 +125,24 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
         state.values.setdefault("paper_trading_sessions", 0.0)
         state.values.setdefault("strategies_tested", 0.0)
         state.values.setdefault("concepts_practiced", 0.0)
+        state.values.setdefault("learning_budget_inr", 0.0)
         state.values.setdefault("learning_cost_inr", 0.0)
         for month in range(1, months + 1):
+            budget = state.values["learning_budget_inr"]
+            actual_spend = min(max(budget, 0.0), spend) if budget > 0 else spend
             updated = state.apply({
                 "paper_trading_sessions": sessions,
                 "strategies_tested": strategies,
                 "concepts_practiced": concepts,
-                "learning_cost_inr": spend,
+                "learning_cost_inr": actual_spend,
+                "learning_budget_inr": -actual_spend if budget > 0 else 0.0,
             })
             updated["study_hours_per_week"] = hours
             state.values["study_hours_per_week"] = hours
             events = [
                 f"Illustrative learning plan: {hours:g} study hours per week.",
                 f"Practice target: {sessions:g} paper-trading sessions and {strategies:g} strategy tests this month.",
-                f"Planned learning spend: ₹{spend:,.0f} this month.",
+                f"Illustrative learning spend: ₹{actual_spend:,.0f} this month.",
                 "No trading profits, market returns, or win rates are predicted.",
             ]
             timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
