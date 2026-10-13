@@ -32,5 +32,4 @@ jobs:
       - name: Run simulation tests
         run: python -m pytest -q
       - name: Check frontend JavaScript syntax
-        working-directory: .
-        run: node --check frontend/app.js
+        run: node --check ../frontend/app.js
