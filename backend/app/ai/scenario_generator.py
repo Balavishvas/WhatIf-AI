@@ -8,6 +8,13 @@ from typing import Any
 def _fallback_branches(decision: str) -> list[str]:
     """Choose the most specific domain first; investment wording can occur in any domain."""
     text = decision.lower()
+    if any(word in text for word in ("ice cream", "sweets", "sweet", "sugar", "snack", "junk food", "eat every day", "eating every day", "daily diet", "diet", "nutrition", "food habit")):
+        return [
+            "Keep the habit but choose a smaller, mindful portion",
+            "Pair occasional treats with a varied, balanced eating routine",
+            "Make the treat occasional rather than an everyday habit",
+            "Track the habit for a few weeks and adjust based on how you feel",
+        ]
     if any(word in text for word in ("learn", "learning", "study", "skill", "practice", "course", "knowledge", "ai", "project", "build portfolio")):
         return [
             "Maintain a steady learning routine",
