@@ -128,8 +128,15 @@
     (data.scenarios || []).forEach((scenario) => (scenario.timeline || []).forEach((row) => Object.keys(row.values || {}).forEach((key) => keys.add(key))));
     const previous = metricSelect.value;
     metricSelect.replaceChildren(new Option("Choose metric", ""));
-    [...keys].forEach((key) => metricSelect.add(new Option(metricName(key), key)));
-    metricSelect.value = keys.has(previous) ? previous : (keys.values().next().value || "");
+    // Put decision-relevant progress metrics first; financial metrics should not
+    // dominate a learning scenario just because a budget was mentioned.
+    const preferred = ["projects_completed", "skills_practiced", "study_hours_per_week", "learning_budget_remaining_inr"];
+    const orderedKeys = [...keys].sort((a, b) => {
+      const ai = preferred.indexOf(a), bi = preferred.indexOf(b);
+      return (ai < 0 ? preferred.length : ai) - (bi < 0 ? preferred.length : bi);
+    });
+    orderedKeys.forEach((key) => metricSelect.add(new Option(metricName(key), key)));
+    metricSelect.value = keys.has(previous) ? previous : (orderedKeys[0] || "");
     drawChart();
   }
   function drawChart() {
