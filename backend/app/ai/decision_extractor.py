@@ -90,7 +90,7 @@ def extract_decision(decision: str, months: int = 3) -> ExtractedDecision:
             from google import genai
 
             client = genai.Client(api_key=api_key)
-            model = os.getenv("GEMINI_MODEL", "gemini-3.6-flash-lite")
+            model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
             response = client.models.generate_content(
                 model=model,
                 contents=f"{SYSTEM_PROMPT}\n\nUser decision:\n{decision}",
