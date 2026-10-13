@@ -82,7 +82,7 @@ def simulate(request: SimulationRequest) -> SimulationResponse:
     allowed_keys = {metric["key"] for metric in METRIC_CATALOG[domain]}
     allowed_keys.update({
         "annual_premium_inr", "premium_share_of_income_pct", "cumulative_premium_paid_inr",
-        "learning_budget_specified",
+        "learning_budget_specified", "learning_budget_inr",
         "monthly_income_inr", "monthly_expenses_inr", "savings_inr", "monthly_surplus_inr",
         "cumulative_education_cost_inr", "cumulative_earnings_inr", "habit_sessions_completed",
         "habit_cost_inr", "upfront_cost_inr",
