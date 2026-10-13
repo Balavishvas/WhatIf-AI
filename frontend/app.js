@@ -95,7 +95,7 @@
     life_insurance: [["monthly_premium_inr","Monthly premium (INR)",""],["coverage_amount_inr","Coverage amount (INR)",""],["monthly_income_inr","Monthly income (INR)",""]],
     health_insurance: [["monthly_premium_inr","Monthly premium (INR)",""],["coverage_amount_inr","Sum insured (INR)",""],["deductible_inr","Deductible (INR)",""],["copay_pct","Co-pay (%)",""],["monthly_income_inr","Monthly income (INR)",""]],
     insurance: [["monthly_premium_inr","Monthly premium (INR)",""],["coverage_amount_inr","Coverage amount (INR)",""],["monthly_income_inr","Monthly income (INR)",""]],
-    business: [["revenue","Monthly revenue",""],["customers","Customers",""],["cost","Monthly costs",""]],
+    business: [["revenue","Monthly revenue",""],["customers","Customers",""],["cost","Monthly costs",""],["cash_on_hand","Cash on hand",""]],
     personal_finance: [["monthly_income_inr","Monthly income (INR)",""],["monthly_expenses_inr","Monthly expenses (INR)",""],["savings_inr","Current savings (INR)",""]],
     health_habit: [["habit_days_per_week","Planned days per week",""],["habit_sessions_completed","Sessions completed","0"],["habit_cost_inr","Habit-related cost (INR)",""]],
     general: [["revenue","Income / revenue",""],["customers","Users / customers",""],["cost","Costs / expenses",""]]
