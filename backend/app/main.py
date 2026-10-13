@@ -26,13 +26,14 @@ def simulate(request: SimulationRequest) -> SimulationResponse:
         initial_state=state,
         branches=request.branches,
         months=months,
+        decision=request.decision,
     )
 
     return SimulationResponse(
         decision=request.decision,
         scenarios=scenarios,
         assumptions=extracted.assumptions + [
-            "The simulation engine currently uses deterministic starter rules.",
+            "Scenario changes use deterministic, decision-category starter rules.",
             "Scenario values are illustrative simulation outputs, not forecasts.",
         ],
     )
