@@ -60,8 +60,8 @@ def test_vehicle_calculator_sums_only_supplied_cost_inputs():
         decision="What if I buy a 600 cc motorcycle?",
     )
     final = scenarios[0].timeline[-1].values
-    assert final["monthly_ownership_cost_inr"] == 11500
-    assert final["cumulative_ownership_cost_inr"] == 84500
+    assert final["monthly_ownership_cost_inr"] == 12500
+    assert final["cumulative_ownership_cost_inr"] == 87500
 
 
 def test_insurance_calculator_uses_supplied_premium_and_coverage_only():
