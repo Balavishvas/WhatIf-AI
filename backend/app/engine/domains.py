@@ -94,7 +94,7 @@ def classify_domain(decision: str) -> str:
         return "health_insurance"
     if any(p in text for p in ("insurance", "policy premium", "sum insured", "deductible", "co-pay", "copay")):
         return "insurance"
-    if any(p in text for p in ("stock market", "stock-market", "stock trading", "day trading", "paper trading", "learn trading", "learning trading", "investing course", "technical analysis")):
+    if any(p in text for p in ("stock market", "stock-market", "stock marketing", "stock trading", "day trading", "paper trading", "learn trading", "learning trading", "investing course", "technical analysis")):
         return "stock_learning"
     if any(p in text for p in ("undergraduate", "join ug", "college", "university", "degree", "get into job", "job after school", "workforce", "study or work", "study vs job")):
         return "education_career"
