@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
 from pydantic import BaseModel, Field
 
 
@@ -8,15 +7,8 @@ class SimulationRequest(BaseModel):
     decision: str = Field(min_length=3)
     initial_state: dict[str, float] = Field(default_factory=dict)
     months: int = Field(default=3, ge=1, le=24)
-    branches: list[str] = Field(
-        default_factory=lambda: [
-            "continue current path",
-            "strongly pursue the decision",
-            "take a balanced approach",
-        ],
-        min_length=1,
-        max_length=8,
-    )
+    # Empty means the backend will generate decision-relevant branches locally.
+    branches: list[str] = Field(default_factory=list, min_length=0, max_length=8)
 
 
 class StateSnapshot(BaseModel):
