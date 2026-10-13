@@ -1,13 +1,13 @@
 from fastapi import FastAPI
 
 from .ai.decision_extractor import extract_decision
-from .ai.scenario_generator import generate_branches
+from .ai.scenario_generator import generate_branches, scenario_generation_mode
 from .models import SimulationRequest, SimulationResponse
 from .engine.simulation import run_simulation
 
 app = FastAPI(
     title="WhatIf AI",
-    version="0.3.0",
+    version="0.4.0",
     description="A stateful scenario simulation engine for exploring possible futures.",
 )
 
@@ -32,7 +32,7 @@ def simulate(request: SimulationRequest) -> SimulationResponse:
     )
 
     assumptions = extracted.assumptions + [
-        "Scenario branches are generated locally using deterministic keyword rules unless supplied in the request.",
+        f"Automatically generated scenario branches use {scenario_generation_mode()} when branches are not supplied.",
         "Scenario changes use deterministic, decision-category starter rules.",
         "Scenario values are illustrative simulation outputs, not forecasts.",
     ]
