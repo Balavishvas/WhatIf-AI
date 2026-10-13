@@ -16,7 +16,6 @@ def _fallback_branches(decision: str) -> list[str]:
             "make the change aggressively",
             "delay the decision and reduce risk",
         ]
-
     if any(word in text for word in ("market", "advertis", "customer", "sales", "promotion", "marketing")):
         return [
             "continue current marketing strategy",
@@ -24,7 +23,6 @@ def _fallback_branches(decision: str) -> list[str]:
             "increase marketing investment cautiously",
             "reduce marketing spend to limit risk",
         ]
-
     if any(word in text for word in ("invest", "budget", "spend", "cost", "expense", "save", "saving")):
         return [
             "maintain the current budget",
@@ -32,7 +30,6 @@ def _fallback_branches(decision: str) -> list[str]:
             "make a balanced investment",
             "reduce spending and prioritize savings",
         ]
-
     if any(word in text for word in ("learn", "study", "skill", "practice", "course", "knowledge", "ai")):
         return [
             "continue the current learning routine",
@@ -40,7 +37,6 @@ def _fallback_branches(decision: str) -> list[str]:
             "follow a balanced learning schedule",
             "reduce the workload and learn steadily",
         ]
-
     if any(word in text for word in ("hire", "employee", "team", "staff")):
         return [
             "keep the current team size",
@@ -48,7 +44,6 @@ def _fallback_branches(decision: str) -> list[str]:
             "hire gradually as demand grows",
             "delay hiring and control costs",
         ]
-
     return [
         "continue the current path",
         "pursue the decision optimistically",
@@ -83,23 +78,28 @@ User decision:
         if not isinstance(branches, list):
             return None
         cleaned = [item.strip() for item in branches if isinstance(item, str) and item.strip()]
-        # Keep the API's documented maximum of eight branches and reject empty output.
         return cleaned[:8] if 3 <= len(cleaned) <= 8 else None
     except Exception:
-        # Keep simulations available if the key, network, model, or response fails.
+        # Avoid leaking credentials or provider errors into API responses.
         return None
 
 
-def scenario_generation_mode() -> str:
-    """Return the configured generation mode for response transparency."""
-    return "Gemini API" if os.getenv("GEMINI_API_KEY") else "local keyword rules"
-
-
-def generate_branches(decision: str) -> list[str]:
-    """Generate branches with Gemini when configured, otherwise use local rules."""
+def generate_branches_with_source(decision: str) -> tuple[list[str], str]:
+    """Return generated branches and the provider that actually supplied them."""
     api_key = os.getenv("GEMINI_API_KEY")
     if api_key:
         branches = _generate_with_gemini(decision, api_key)
         if branches:
-            return branches
-    return _fallback_branches(decision)
+            return branches, "Gemini API"
+        return _fallback_branches(decision), "local keyword rules (Gemini unavailable or response invalid)"
+    return _fallback_branches(decision), "local keyword rules (no API key configured)"
+
+
+def generate_branches(decision: str) -> list[str]:
+    """Compatibility wrapper returning only branch labels."""
+    return generate_branches_with_source(decision)[0]
+
+
+def scenario_generation_mode() -> str:
+    """Describe configuration only; this does not confirm a successful Gemini call."""
+    return "Gemini API configured" if os.getenv("GEMINI_API_KEY") else "local keyword rules"
