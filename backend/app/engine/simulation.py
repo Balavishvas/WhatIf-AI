@@ -248,7 +248,7 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
             events = [
                 f"Illustrative plan: {weekly_hours:g} study hours per week",
                 f"Project progress: +{project_rate:g} project-equivalents this month",
-                f"Learning spend: ₹{actual_spend:,.0f}; budget remaining ₹{updated['learning_budget_remaining_inr']:,.0f}",
+                f"Illustrative learning spend this month: ₹{actual_spend:,.0f}; remaining supplied budget ₹{updated['learning_budget_inr']:,.0f}",
             ]
             timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
     else:
