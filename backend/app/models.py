@@ -27,6 +27,7 @@ class SimulationResponse(BaseModel):
     decision: str
     scenarios: list[Scenario]
     assumptions: list[str]
+    safety_notice: str | None = None
     disclaimer: str = (
         "This is a scenario simulation, not a prediction of the actual future."
     )
