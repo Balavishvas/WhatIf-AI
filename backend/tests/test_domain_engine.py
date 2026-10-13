@@ -97,3 +97,28 @@ def test_simulation_response_contains_domain_and_metric_metadata(monkeypatch):
     assert data["domain_label"] == "Stock-market learning"
     assert any(metric["key"] == "paper_trading_sessions" for metric in data["metrics"])
     assert all("revenue" not in scenario["timeline"][-1]["values"] for scenario in data["scenarios"])
+
+
+def test_business_simulation_calculates_cash_flow_from_supplied_inputs():
+    scenarios = run_simulation(
+        initial_state={"revenue": 10000, "cost": 7000, "customers": 100, "cash_on_hand": 20000},
+        branches=["Continue the current business path"],
+        months=2,
+        decision="What if I start a business?",
+    )
+    first, second = [item.values for item in scenarios[0].timeline]
+    assert first["monthly_net_cashflow"] == 3000
+    assert first["cash_on_hand"] == 23000
+    assert second["cash_on_hand"] > first["cash_on_hand"]
+
+
+def test_stock_learning_budget_caps_cumulative_planned_spend():
+    scenarios = run_simulation(
+        initial_state={"learning_budget_inr": 1000, "learning_budget_specified": 1},
+        branches=["Follow a structured financial-analysis course and practice concepts with a paper portfolio"],
+        months=6,
+        decision="What if I spend six months learning stock trading?",
+    )
+    final = scenarios[0].timeline[-1].values
+    assert final["learning_cost_inr"] == 1000
+    assert final["learning_budget_inr"] == 0
