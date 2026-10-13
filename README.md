@@ -10,7 +10,11 @@ WhatIf AI turns a decision into several possible paths, then lets you inspect il
 - **Compare trajectories:** view a selected metric across possible paths.
 - **Inspect monthly detail:** expand each path to see timeline values and change events.
 - **Understand the assumptions:** see where branches came from and how to interpret the outputs.
-- **Start with your own numbers:** optionally provide income/revenue, users/customers, and costs.
+- **Domain-aware metrics:** choose relevant inputs for stock-market learning, education vs work, vehicles, insurance, personal finance, business, learning and habits.
+- **Transparent calculations:** compare vehicle ownership costs, quoted insurance premiums, education/work inputs, personal budgets and learning-plan milestones.
+- **Explore each possibility:** inspect scenario details, trade-offs, modeled values and timelines.
+- **Save and export:** save/reopen simulations locally in the browser and export JSON or CSV.
+- **Start with your own numbers:** inputs change based on the selected decision domain.
 
 > **Important:** the numeric outputs use deterministic starter rules. They are illustrative scenario simulations, not validated forecasts or financial advice. Gemini can generate scenario descriptions; it does not calibrate the numeric rates.
 
@@ -109,9 +113,13 @@ An empty `branches` array asks the backend to generate branches automatically. T
 
 ## Current limitations
 
-- Numeric simulation uses deterministic, keyword-driven starter rates.
-- A scenario label is not a calibrated model or evidence-based prediction.
-- State variable meanings depend on the values supplied by the user.
+- Domain-specific calculations use supplied values and illustrative learning-plan targets; they are not calibrated forecasts.
+- Stock-market learning tracks study and paper-trading practice; it does not predict profits or returns.
+- Vehicle totals depend on supplied prices, EMI, fuel, maintenance and insurance inputs.
+- Insurance comparisons require actual quotes and policy wording; no benefits or premiums are invented.
+- Education and career outcomes do not guarantee admission, graduation, hiring or salary.
+- Browser-saved simulations remain local to that browser profile; there are no user accounts or cloud sync yet.
+- Evidence-backed live data connectors, richer sensitivity analysis and a later UI redesign remain roadmap items.
 - The frontend requires the backend API; the launcher checks both services before opening the app.
 
 **WhatIf AI — Explore, don't predict.**
