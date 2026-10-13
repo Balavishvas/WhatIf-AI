@@ -20,7 +20,8 @@ DOMAIN_LABELS = {
 METRIC_CATALOG: dict[str, list[dict[str, str]]] = {
     "stock_learning": [
         {"key": "study_hours_per_week", "label": "Study hours per week", "unit": "hours/week", "kind": "plan"},
-        {"key": "learning_cost_inr", "label": "Learning spend (INR)", "unit": "INR", "kind": "cost"},
+        {"key": "learning_budget_inr", "label": "Learning budget (INR)", "unit": "INR", "kind": "input"},
+        {"key": "learning_cost_inr", "label": "Cumulative learning spend (INR)", "unit": "INR", "kind": "cost"},
         {"key": "paper_trading_sessions", "label": "Paper-trading sessions", "unit": "sessions", "kind": "plan"},
         {"key": "strategies_tested", "label": "Strategies tested", "unit": "strategies", "kind": "plan"},
         {"key": "concepts_practiced", "label": "Concepts practiced", "unit": "concepts", "kind": "plan"},
