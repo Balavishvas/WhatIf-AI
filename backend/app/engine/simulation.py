@@ -221,7 +221,9 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
         state.values.setdefault("customers", 0.0)
         state.values.setdefault("cash_on_hand", 0.0)
         branch_text = branch.lower()
-        if any(word in branch_text for word in ("cautious", "reduce", "delay", "risk")):
+        if any(word in branch_text for word in ("continue", "current", "maintain", "baseline", "keep")):
+            revenue_rate, customer_rate, cost_rate = 0.0, 0.0, 0.0
+        elif any(word in branch_text for word in ("cautious", "reduce", "delay", "risk")):
             revenue_rate, customer_rate, cost_rate = 0.01, 0.01, -0.01
         elif any(word in branch_text for word in ("aggressive", "optimistic", "expand", "increase", "growth")):
             revenue_rate, customer_rate, cost_rate = 0.06, 0.07, 0.04
