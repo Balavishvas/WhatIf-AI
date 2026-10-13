@@ -94,9 +94,9 @@ def simulate(request: SimulationRequest) -> SimulationResponse:
         decision=request.decision,
     )
 
-    assumptions = extracted.assumptions + [
+    assumptions = extracted.assumptions + domain_assumptions(domain, state) + [
         f"Scenario branch source: {branch_source}.",
-        "Scenario changes use deterministic illustrative rules; learning metrics are plan scenarios, not predicted outcomes.",
+        "Scenario changes use domain-specific transparent formulas and illustrative planning targets; they are not forecasts.",
         "Scenario values are illustrative simulation outputs, not forecasts.",
     ]
     if not state:
@@ -108,4 +108,7 @@ def simulate(request: SimulationRequest) -> SimulationResponse:
         decision=request.decision,
         scenarios=scenarios,
         assumptions=assumptions,
+        domain=domain,
+        domain_label=DOMAIN_LABELS[domain],
+        metrics=METRIC_CATALOG[domain],
     )
