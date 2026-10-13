@@ -10,6 +10,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from ..engine.domains import classify_domain
+
 
 class ExtractedDecision(BaseModel):
     """Structured representation of a user's decision."""
@@ -53,6 +55,56 @@ def _fallback_extract(decision: str, months: int) -> ExtractedDecision:
     )
     amount_text = next((group for group in money_match.groups() if group), None) if money_match else None
     amount = float(amount_text.replace(",", "")) if amount_text else None
+
+    domain = classify_domain(decision)
+    # Prefer domain-specific input names so the calculator never mistakes revenue
+    # for salary, premium, education costs, or a vehicle purchase price.
+    if domain == "stock_learning":
+        variables = {
+            "study_hours_per_week": 0.0,
+            "learning_cost_inr": amount or 0.0,
+            "paper_trading_sessions": 0.0,
+            "strategies_tested": 0.0,
+            "concepts_practiced": 0.0,
+        }
+        assumptions.append("Learning progress metrics are planning targets; no stock-market profit or return is predicted.")
+        if amount is None:
+            assumptions.append("No learning budget was specified; enter course and tool costs to personalize cost comparisons.")
+        return ExtractedDecision(goal="Explore stock-market learning approaches", action=decision.strip(), horizon_months=horizon, variables=variables, constraints=[], assumptions=assumptions)
+    if domain == "education_career":
+        variables = {"education_cost_inr": 0.0, "monthly_take_home_inr": 0.0, "study_hours_per_week": 0.0, "work_experience_months": 0.0, "cumulative_education_cost_inr": 0.0, "cumulative_earnings_inr": 0.0}
+        assumptions.append("Enter total course cost and a realistic take-home salary if known; future admission and employment are not guaranteed.")
+        return ExtractedDecision(goal="Compare education and work pathways", action=decision.strip(), horizon_months=horizon, variables=variables, constraints=[], assumptions=assumptions)
+    if domain in ("life_insurance", "health_insurance", "insurance"):
+        variables = {"monthly_premium_inr": 0.0, "coverage_amount_inr": 0.0, "annual_premium_inr": 0.0}
+        if amount is not None:
+            if any(word in text for word in ("monthly premium", "per month premium", "premium each month")):
+                variables["monthly_premium_inr"] = amount
+            elif any(word in text for word in ("coverage", "cover of", "sum insured", "life cover")):
+                variables["coverage_amount_inr"] = amount
+            else:
+                assumptions.append("The amount mentioned was not assigned to a premium or coverage field because its meaning is ambiguous.")
+        assumptions.append("Use actual insurer quotes and policy wording; no premiums, coverage eligibility or claim outcomes are invented.")
+        return ExtractedDecision(goal="Compare insurance options", action=decision.strip(), horizon_months=horizon, variables=variables, constraints=[], assumptions=assumptions)
+    if domain == "vehicle":
+        variables = {"vehicle_purchase_price_inr": 0.0, "down_payment_inr": 0.0, "monthly_emi_inr": 0.0, "monthly_fuel_cost_inr": 0.0, "monthly_maintenance_cost_inr": 0.0, "annual_insurance_cost_inr": 0.0}
+        if amount is not None:
+            if "down payment" in text:
+                variables["down_payment_inr"] = amount
+            elif any(word in text for word in ("monthly emi", "emi of", "emi is")):
+                variables["monthly_emi_inr"] = amount
+            elif any(word in text for word in ("fuel cost", "fuel per month")):
+                variables["monthly_fuel_cost_inr"] = amount
+            elif any(word in text for word in ("bike costs", "bike price", "purchase price", "vehicle price", "car price")):
+                variables["vehicle_purchase_price_inr"] = amount
+            else:
+                assumptions.append("The mentioned amount was not assigned to a vehicle-cost field because its meaning is ambiguous.")
+        assumptions.append("Missing vehicle prices, loan terms, mileage, fuel prices, maintenance and insurance quotes remain unknown; supply actual values.")
+        return ExtractedDecision(goal="Compare vehicle ownership paths", action=decision.strip(), horizon_months=horizon, variables=variables, constraints=[], assumptions=assumptions)
+    if domain == "personal_finance":
+        variables = {"monthly_income_inr": 0.0, "monthly_expenses_inr": 0.0, "savings_inr": 0.0}
+        assumptions.append("Provide monthly income, expenses and current savings for a numeric budget simulation.")
+        return ExtractedDecision(goal="Explore personal-finance trade-offs", action=decision.strip(), horizon_months=horizon, variables=variables, constraints=[], assumptions=assumptions)
 
     is_learning = any(word in text for word in (
         "learn", "learning", "study", "skill", "practice", "course", "knowledge", "ai", "project", "portfolio"
