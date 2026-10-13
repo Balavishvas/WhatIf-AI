@@ -53,3 +53,46 @@ def test_zero_months_returns_empty_timeline():
     )
 
     assert scenarios[0].timeline == []
+
+
+def test_baseline_branch_keeps_values_unchanged():
+    scenarios = run_simulation(
+        initial_state={"revenue": 10000, "customers": 100},
+        branches=["continue current path"],
+        months=2,
+        decision="What if I invest more in marketing?",
+    )
+    assert scenarios[0].timeline[0].values == {"revenue": 10000, "customers": 100}
+    assert scenarios[0].timeline[1].values == {"revenue": 10000, "customers": 100}
+
+
+def test_scenario_wording_changes_monthly_rate_and_explains_it():
+    scenarios = run_simulation(
+        initial_state={"revenue": 10000},
+        branches=[
+            "continue current path",
+            "increase marketing investment optimistically",
+            "reduce marketing spend to limit risk",
+        ],
+        months=1,
+        decision="What if I increase marketing spend?",
+    )
+    baseline, growth, cautious = [s.timeline[0] for s in scenarios]
+    assert baseline.values["revenue"] == 10000
+    assert growth.values["revenue"] > 10000
+    assert cautious.values["revenue"] < 10000
+    assert "starter rate" in growth.events[0]
+    assert "starter rate" in cautious.events[0]
+
+
+def test_career_decision_uses_career_metrics():
+    scenarios = run_simulation(
+        initial_state={"savings": 20000, "monthly_expenses": 2500},
+        branches=["continue current path", "transition gradually with a balanced approach"],
+        months=1,
+        decision="What if I quit my job to build an AI startup?",
+    )
+    baseline, balanced = [s.timeline[0].values for s in scenarios]
+    assert baseline == {"savings": 20000, "monthly_expenses": 2500}
+    assert balanced["savings"] > 20000
+    assert balanced["monthly_expenses"] > 2500
