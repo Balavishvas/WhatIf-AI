@@ -133,7 +133,7 @@ def domain_assumptions(domain: str, values: dict[str, float]) -> list[str]:
             assumptions.append("Enter a real insurer quote and stated coverage amount before comparing cost and coverage numerically.")
         assumptions.append("Policy exclusions, waiting periods, underwriting and claim outcomes require the actual policy wording and insurer confirmation.")
     elif domain == "vehicle":
-        missing = [key for key in ("monthly_emi_inr", "monthly_fuel_cost_inr", "monthly_maintenance_cost_inr", "annual_insurance_cost_inr") if key not in values]
+        missing = [key for key in ("monthly_emi_inr", "monthly_fuel_cost_inr", "monthly_maintenance_cost_inr", "annual_insurance_cost_inr") if values.get(key, 0.0) <= 0]
         if missing:
             assumptions.append("Some ownership-cost inputs are missing; zero placeholders are not estimates.")
     elif domain == "education_career":
