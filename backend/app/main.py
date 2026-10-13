@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from .ai.decision_extractor import extract_decision
 from .ai.scenario_generator import generate_branches_with_source
@@ -7,8 +8,24 @@ from .engine.simulation import run_simulation
 
 app = FastAPI(
     title="WhatIf AI",
-    version="0.5.0",
+    version="0.6.0",
     description="A stateful scenario simulation engine for exploring possible futures.",
+)
+
+# Allow the local static frontend to call the API during development.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 
