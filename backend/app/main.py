@@ -37,7 +37,8 @@ def health() -> dict[str, str]:
 @app.post("/simulate", response_model=SimulationResponse)
 def simulate(request: SimulationRequest) -> SimulationResponse:
     extracted = extract_decision(request.decision, request.months)
-    state = request.initial_state or extracted.variables
+    # Keep extracted domain metrics and let explicit UI values override matching keys.
+    state = {**extracted.variables, **request.initial_state}
     months = extracted.horizon_months or request.months
 
     if request.branches:
@@ -55,7 +56,7 @@ def simulate(request: SimulationRequest) -> SimulationResponse:
 
     assumptions = extracted.assumptions + [
         f"Scenario branch source: {branch_source}.",
-        "Scenario changes use deterministic, decision-category starter rules.",
+        "Scenario changes use deterministic illustrative rules; learning metrics are plan scenarios, not predicted outcomes.",
         "Scenario values are illustrative simulation outputs, not forecasts.",
     ]
     if not state:
