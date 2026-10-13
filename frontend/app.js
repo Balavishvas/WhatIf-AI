@@ -137,6 +137,70 @@
   $("closeScenarioDialog").addEventListener("click", () => $("scenarioDialog").close());
   $("scenarioDialog").addEventListener("click", (event) => { if (event.target === $("scenarioDialog")) $("scenarioDialog").close(); });
 
+  const SAVED_KEY = "whatif-ai:saved-simulations:v1";
+  function readSaved() {
+    try { const data = JSON.parse(localStorage.getItem(SAVED_KEY) || "[]"); return Array.isArray(data) ? data : []; }
+    catch (_) { return []; }
+  }
+  function refreshSavedPicker() {
+    const picker = $("savedSimulations");
+    if (!picker) return;
+    const current = picker.value;
+    picker.replaceChildren(new Option("Open saved simulation", ""));
+    readSaved().forEach((item) => picker.add(new Option(item.label, item.id)));
+    if ([...picker.options].some((option) => option.value === current)) picker.value = current;
+  }
+  function downloadFile(filename, content, type) {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url; link.download = filename; link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function exportJson() {
+    if (!latestResponse) return;
+    downloadFile("whatif-simulation.json", JSON.stringify({ ...latestResponse, exported_at: new Date().toISOString() }, null, 2), "application/json;charset=utf-8");
+  }
+  function exportCsv() {
+    if (!latestResponse) return;
+    const quote = (value) => '"' + String(value ?? "").replace(/"/g, '""') + '"';
+    const rows = [["decision", "domain", "scenario", "month", "metric", "value", "events"]];
+    (latestResponse.scenarios || []).forEach((scenario) => (scenario.timeline || []).forEach((point) => {
+      Object.entries(point.values || {}).forEach(([key, value]) => rows.push([
+        latestResponse.decision, latestResponse.domain || "general", scenario.name, point.month, key, value, (point.events || []).join(" | ")
+      ]));
+    }));
+    downloadFile("whatif-simulation.csv", rows.map((row) => row.map(quote).join(",")).join("\r\n"), "text/csv;charset=utf-8");
+  }
+  $("saveSimulation")?.addEventListener("click", () => {
+    if (!latestResponse) return;
+    try {
+      const saved = readSaved();
+      const id = (window.crypto?.randomUUID?.() || String(Date.now()));
+      saved.unshift({ id, label: (latestResponse.domain_label || "Decision") + " · " + latestResponse.decision.slice(0, 58), decision: latestResponse.decision, months: Number($("months").value), response: latestResponse, saved_at: new Date().toISOString() });
+      localStorage.setItem(SAVED_KEY, JSON.stringify(saved.slice(0, 30)));
+      refreshSavedPicker();
+      $("savedSimulations").value = id;
+      $("saveSimulation").textContent = "SAVED ✓";
+    } catch (_) { formError.textContent = "Could not save locally. Check whether browser storage is available."; }
+  });
+  $("exportJson")?.addEventListener("click", exportJson);
+  $("exportCsv")?.addEventListener("click", exportCsv);
+  $("savedSimulations")?.addEventListener("change", (event) => {
+    const item = readSaved().find((saved) => saved.id === event.target.value);
+    if (!item) return;
+    latestResponse = item.response;
+    decisionInput.value = item.decision;
+    decisionInput.dispatchEvent(new Event("input"));
+    $("months").value = String(item.months || 3);
+    renderScenarios(latestResponse);
+    renderAssumptions(latestResponse);
+    renderMetricOptions(latestResponse);
+    resultsSection.hidden = false; emptyState.hidden = true;
+    resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  refreshSavedPicker();
+
   function renderScenarios(data) {
     const scenarios = Array.isArray(data.scenarios) ? data.scenarios : [];
     scenarioGrid.replaceChildren();
@@ -310,6 +374,7 @@
       }
       if (!Array.isArray(data.scenarios)) throw new Error("The API response did not contain scenario results.");
       latestResponse = data;
+      $("saveSimulation").textContent = "SAVE";
       renderScenarios(data);
       renderAssumptions(data);
       renderMetricOptions(data);
