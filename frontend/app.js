@@ -176,7 +176,6 @@
     chart.innerHTML = svg;
   }
   metricSelect.addEventListener("change", drawChart);
-  $("assumptions").addEventListener?.("click", () => {});
   document.querySelector(".assumptions summary")?.addEventListener("click", () => {
     const icon = document.querySelector(".summary-icon");
     window.setTimeout(() => { icon.textContent = document.querySelector(".assumptions").open ? "−" : "+"; }, 0);
