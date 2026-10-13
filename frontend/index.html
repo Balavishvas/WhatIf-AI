@@ -3,66 +3,81 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0a0c10">
-  <meta name="description" content="WhatIf AI — explore alternate futures through AI-generated scenarios and transparent simulations.">
-  <title>WhatIf AI — Explore the branches</title>
+  <meta name="theme-color" content="#0c1016">
+  <meta name="description" content="Explore possible futures with WhatIf AI, an AI-assisted decision simulation workspace.">
+  <title>WhatIf AI — Decision Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
 </head>
 <body>
-  <div class="noise" aria-hidden="true"></div>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
   <header class="topbar">
-    <a class="brand" href="#" aria-label="WhatIf AI home"><span class="brand-mark"><span></span><span></span><span></span></span><span>whatif<span class="brand-ai">.ai</span></span></a>
-    <div class="top-center"><span class="live-dot"></span><span>DECISION INTELLIGENCE LAB</span></div>
-    <div class="top-right"><span class="api-state" id="apiState">CONNECTING TO ENGINE</span><span class="avatar">W</span></div>
+    <a class="brand" href="#" aria-label="WhatIf AI home"><span class="brand-symbol"><i></i><i></i><i></i></span><span>whatif<span class="brand-accent">.ai</span></span></a>
+    <nav class="nav-label" aria-label="Primary"><span class="status-dot"></span> DECISION STUDIO <span class="nav-divider">/</span> BETA</nav>
+    <div class="connection"><span id="apiDot" class="connection-dot"></span><span id="apiState" role="status">CHECKING ENGINE</span><button id="retryHealth" class="icon-button" type="button" aria-label="Check backend connection" title="Check connection">↻</button></div>
   </header>
 
-  <main>
-    <section class="hero">
-      <div class="eyebrow"><span class="eyebrow-line"></span> YOUR NEXT MOVE, SIMULATED <span class="eyebrow-index">01 / 03</span></div>
-      <h1>Every choice creates<br>a <span class="gradient-text">different universe.</span></h1>
-      <p class="hero-copy">Don't ask AI to decide for you. Explore what could happen if you decide differently.</p>
-      <div class="hero-orbit" aria-hidden="true">
-        <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div>
-        <div class="orbit-core"><span>?</span></div>
-        <span class="orbit-node node-a">A</span><span class="orbit-node node-b">B</span><span class="orbit-node node-c">C</span>
-        <span class="orbit-label label-a">POSSIBILITY_01</span><span class="orbit-label label-b">POSSIBILITY_02</span><span class="orbit-label label-c">POSSIBILITY_03</span>
+  <main class="shell">
+    <section class="intro">
+      <div class="intro-copy">
+        <p class="eyebrow"><span class="eyebrow-line"></span> THINK BEYOND THE OBVIOUS</p>
+        <h1>Your future isn't<br><span>one straight line.</span></h1>
+        <p class="intro-text">Make a decision. Explore different paths. Understand the assumptions behind each possible outcome.</p>
+        <div class="intro-foot"><span class="mini-spark">✳</span><span>BUILT FOR BETTER QUESTIONS, NOT CERTAIN ANSWERS.</span></div>
+      </div>
+      <div class="orbit-art" aria-hidden="true">
+        <div class="orbit-ring ring-a"></div><div class="orbit-ring ring-b"></div><div class="orbit-ring ring-c"></div>
+        <div class="orbit-center"><span>WHAT</span><b>IF<span>?</span></b></div>
+        <span class="orbit-point point-a">A</span><span class="orbit-point point-b">B</span><span class="orbit-point point-c">C</span>
+        <span class="orbit-caption caption-a">PATH / 01</span><span class="orbit-caption caption-b">PATH / 02</span>
       </div>
     </section>
 
-    <section class="workspace">
-      <div class="section-heading"><div><span class="section-kicker">01 — DEFINE THE DECISION</span><h2>What are you wondering about?</h2></div><span class="mono subtle">INPUT / 001</span></div>
+    <section class="workspace panel">
+      <div class="panel-heading">
+        <div><p class="eyebrow">01 <span class="eyebrow-dash">—</span> THE DECISION</p><h2>What are you thinking about?</h2></div>
+        <span class="step-label">INPUT <b>01</b> / 03</span>
+      </div>
       <form id="decisionForm">
         <label class="sr-only" for="decision">Describe your decision</label>
-        <div class="decision-input-wrap"><span class="input-glyph">↳</span><textarea id="decision" maxlength="1200" rows="3" placeholder="What if I leave my job to build an AI startup?" required>What if I leave my job to build an AI startup?</textarea><span class="char-count" id="charCount">48 / 1200</span></div>
-        <div class="prompt-row"><span class="mono subtle">NEED A SPARK?</span><button type="button" class="prompt-chip" data-prompt="What if I invest more in marketing for my business?">Scale a business <span>↗</span></button><button type="button" class="prompt-chip" data-prompt="What if I spend 6 months learning AI and building projects?">Learn a new skill <span>↗</span></button><button type="button" class="prompt-chip" data-prompt="What if I quit my job to build an AI startup?">Change careers <span>↗</span></button></div>
-        <div class="controls">
-          <div class="control-group"><label for="months">TIME HORIZON</label><div class="select-shell"><select id="months"><option value="3">3 months</option><option value="6">6 months</option><option value="9">9 months</option><option value="12" selected>12 months</option><option value="18">18 months</option><option value="24">24 months</option></select><span>⌄</span></div></div>
-          <div class="control-group state-control"><label>STARTING STATE <span class="optional">(OPTIONAL)</span></label><div class="metric-inputs"><label><span>Revenue / income</span><input id="revenue" type="number" min="0" step="any" placeholder="10000"></label><label><span>Customers / users</span><input id="customers" type="number" min="0" step="any" placeholder="100"></label><label><span>Costs / expenses</span><input id="cost" type="number" min="0" step="any" placeholder="3000"></label></div></div>
-          <button class="run-button" type="submit" id="runButton"><span class="run-icon">✳</span><span id="runLabel">Explore possibilities</span><span class="run-arrow">↗</span></button>
+        <div class="decision-box"><span class="decision-mark">↳</span><textarea id="decision" maxlength="1200" rows="3" placeholder="What if I spend six months learning AI and building projects?" required>What if I spend six months learning AI and building projects?</textarea><span id="charCount" class="char-count">58 / 1200</span></div>
+        <div class="examples"><span class="examples-label">TRY A STARTING POINT</span><button type="button" data-prompt="What if I spend six months learning AI and building projects?">Learn AI <span>↗</span></button><button type="button" data-prompt="What if I leave my job to build an AI startup?">Build a startup <span>↗</span></button><button type="button" data-prompt="What if I invest more in marketing for my business?">Grow a business <span>↗</span></button></div>
+        <div class="form-divider"></div>
+        <div class="input-grid">
+          <div class="field horizon-field"><label for="months">TIME HORIZON</label><div class="select-wrap"><select id="months"><option value="3">3 months</option><option value="6">6 months</option><option value="9">9 months</option><option value="12" selected>12 months</option><option value="18">18 months</option><option value="24">24 months</option></select><span>⌄</span></div><p>How far ahead to explore</p></div>
+          <div class="field state-field"><label>STARTING POINT <span class="optional">OPTIONAL</span></label><div class="state-inputs">
+            <label><span>Income / revenue</span><input id="revenue" type="number" min="0" step="any" placeholder="10,000"></label>
+            <label><span>Users / customers</span><input id="customers" type="number" min="0" step="any" placeholder="100"></label>
+            <label><span>Costs / expenses</span><input id="cost" type="number" min="0" step="any" placeholder="3,000"></label>
+          </div><p>Numbers help compare trajectories</p></div>
         </div>
-        <p class="form-error" id="formError" role="alert"></p>
+        <div class="form-actions"><p class="privacy-note"><span>↳</span> Your decision stays in this local session.</p><button id="runButton" class="primary-button" type="submit"><span class="button-star">✳</span><span id="runLabel">Explore possible futures</span><span class="button-arrow">↗</span></button></div>
+        <p id="formError" class="form-error" role="alert" aria-live="polite"></p>
       </form>
     </section>
 
-    <section class="results-section" id="resultsSection" hidden>
-      <div class="section-heading results-heading"><div><span class="section-kicker">02 — THE MULTIVERSE</span><h2>Three ways this could unfold.</h2><p class="results-subtitle" id="resultSubtitle">AI-generated branches · modelled outcomes</p></div><span class="mono subtle" id="resultCount">0 BRANCHES</span></div>
-      <div class="source-strip"><span class="source-pulse"></span><span id="sourceLabel">WAITING FOR ENGINE</span><span class="source-separator">/</span><span>RULE-BASED SIMULATION</span><span class="source-right">ILLUSTRATIVE, NOT A FORECAST</span></div>
+    <section id="resultsSection" class="results" hidden>
+      <div class="results-heading"><div><p class="eyebrow">02 <span class="eyebrow-dash">—</span> POSSIBLE PATHS</p><h2>Different choices. Different trajectories.</h2><p id="resultSubtitle" class="results-description">Illustrative scenarios based on your decision.</p></div><span id="resultCount" class="result-count">0 PATHS</span></div>
+      <div class="source-note"><span class="source-dot"></span><span id="sourceLabel">ENGINE RESPONSE</span><span class="source-note-divider">·</span><span>SCENARIO OUTPUTS ARE NOT FORECASTS</span></div>
       <div id="scenarioGrid" class="scenario-grid"></div>
-      <div class="chart-panel">
-        <div class="chart-header"><div><span class="section-kicker">03 — TRAJECTORY VIEW</span><h3>Compare the paths</h3></div><label class="chart-select-label" for="metricSelect">METRIC<select id="metricSelect"><option value="">Choose a metric</option></select></label></div>
+      <section class="chart-panel">
+        <div class="chart-heading"><div><p class="eyebrow">03 <span class="eyebrow-dash">—</span> COMPARE</p><h3>How the paths develop</h3><p>Choose a metric to compare its month-by-month trajectory.</p></div><label class="metric-picker">METRIC<select id="metricSelect"><option value="">Choose metric</option></select></label></div>
         <div id="chartLegend" class="chart-legend"></div>
-        <div class="chart-wrap"><svg id="trajectoryChart" viewBox="0 0 900 280" role="img" aria-label="Scenario timeline chart"></svg></div>
-        <div class="chart-foot"><span>STARTING STATE → SIMULATED TIMELINE</span><span id="chartNote">Select a metric to compare</span></div>
-      </div>
-      <details class="assumptions-panel" open><summary><span><span class="section-kicker">TRANSPARENCY LAYER</span><strong>What the engine assumed</strong></span><span class="details-toggle">−</span></summary><ul id="assumptionsList"></ul></details>
+        <div class="chart-container"><svg id="trajectoryChart" viewBox="0 0 900 290" role="img" aria-label="Comparison of scenario trajectories"></svg></div>
+        <div class="chart-caption"><span>STARTING STATE → SIMULATED TIMELINE</span><span id="chartNote">Run a simulation to compare paths</span></div>
+      </section>
+      <details class="assumptions">
+        <summary><span><span class="eyebrow">TRANSPARENCY</span><strong>What the engine assumed</strong></span><span class="summary-icon">+</span></summary>
+        <ul id="assumptionsList"></ul>
+      </details>
     </section>
 
-    <section class="empty-state" id="emptyState"><div class="empty-symbol">✳</div><div><span class="section-kicker">A NOTE ON THE FUTURE</span><p>One decision. Multiple possible paths. <span>None guaranteed.</span></p></div><span class="mono subtle">YOU STAY IN CONTROL.</span></section>
+    <section id="emptyState" class="closing-note"><span class="closing-icon">✳</span><p><strong>Explore the possibilities.</strong><br><span>Remember: a model is a thinking tool, not a crystal ball.</span></p><span class="closing-code">WHATIF / 001</span></section>
   </main>
-  <footer><a class="brand footer-brand" href="#"><span class="brand-mark"><span></span><span></span><span></span></span><span>whatif<span class="brand-ai">.ai</span></span></a><span>BUILT TO EXPLORE, NOT PREDICT.</span><span class="mono">ENGINE v0.6</span></footer>
-  <script src="./app.js" defer></script>
+  <footer class="footer"><a class="brand footer-brand" href="#"><span class="brand-symbol"><i></i><i></i><i></i></span><span>whatif<span class="brand-accent">.ai</span></span></a><span>EXPLORE, DON'T PREDICT.</span><span class="footer-version">DECISION STUDIO · 0.7</span></footer>
 </body>
 </html>
