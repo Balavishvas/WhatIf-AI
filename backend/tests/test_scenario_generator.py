@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 
 from app.ai import scenario_generator
-from app.ai.scenario_generator import generate_branches
+from app.ai.scenario_generator import generate_branches, generate_branches_with_source
 from app.main import app
 
 client = TestClient(app)
@@ -40,7 +40,7 @@ def test_simulate_automatically_generates_branches_when_omitted(monkeypatch):
     payload = response.json()
     assert len(payload["scenarios"]) >= 3
     assert any("marketing" in scenario["assumption"].lower() for scenario in payload["scenarios"])
-    assert any("local keyword rules" in assumption for assumption in payload["assumptions"])
+    assert any("no API key configured" in assumption for assumption in payload["assumptions"])
 
 
 def test_user_supplied_branches_are_preserved(monkeypatch):
@@ -56,10 +56,12 @@ def test_user_supplied_branches_are_preserved(monkeypatch):
     )
 
     assert response.status_code == 200
-    assert [scenario["assumption"] for scenario in response.json()["scenarios"]] == [
+    payload = response.json()
+    assert [scenario["assumption"] for scenario in payload["scenarios"]] == [
         "custom scenario A",
         "custom scenario B",
     ]
+    assert any("user-supplied branches" in assumption for assumption in payload["assumptions"])
 
 
 def test_uses_gemini_branches_when_available(monkeypatch):
@@ -67,14 +69,18 @@ def test_uses_gemini_branches_when_available(monkeypatch):
     expected = ["baseline", "growth approach", "cautious approach"]
     monkeypatch.setattr(scenario_generator, "_generate_with_gemini", lambda decision, api_key: expected)
 
-    assert generate_branches("What if I start a business?") == expected
+    branches, source = generate_branches_with_source("What if I start a business?")
+
+    assert branches == expected
+    assert source == "Gemini API"
 
 
 def test_falls_back_to_local_rules_when_gemini_fails(monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     monkeypatch.setattr(scenario_generator, "_generate_with_gemini", lambda decision, api_key: None)
 
-    branches = generate_branches("What if I increase marketing spend?")
+    branches, source = generate_branches_with_source("What if I increase marketing spend?")
 
     assert len(branches) >= 3
     assert any("marketing" in branch for branch in branches)
+    assert "Gemini unavailable" in source
