@@ -220,6 +220,14 @@
         const detail = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail || data);
         throw new Error("API " + response.status + ": " + (detail || "Request failed"));
       }
+      if (data.safety_notice) {
+        latestResponse = null;
+        resultsSection.hidden = true;
+        emptyState.hidden = false;
+        formError.textContent = data.safety_notice;
+        setApiStatus("SAFETY NOTICE", "offline");
+        return;
+      }
       if (!Array.isArray(data.scenarios)) throw new Error("The API response did not contain scenario results.");
       latestResponse = data;
       renderScenarios(data);
