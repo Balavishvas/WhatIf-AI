@@ -8,29 +8,32 @@ from .state import WorldState
 
 def _decision_type(decision: str) -> str:
     text = decision.lower()
+    # Prioritize the core domain: "invest in learning AI" is a learning decision,
+    # not a generic finance decision.
+    if any(word in text for word in ("learn", "learning", "study", "skill", "practice", "course", "knowledge", "ai", "project", "portfolio")):
+        return "learning"
     if any(word in text for word in ("market", "advertis", "customer", "sales", "promotion")):
         return "marketing"
-    if any(word in text for word in ("invest", "budget", "spend", "cost", "expense", "save", "saving")):
-        return "finance"
-    if any(word in text for word in ("learn", "study", "skill", "practice", "course", "knowledge", "ai")):
-        return "learning"
     if any(word in text for word in ("hire", "employee", "team", "staff")):
         return "hiring"
     if any(word in text for word in ("startup", "business", "quit", "career", "job", "resign")):
         return "career"
+    if any(word in text for word in ("invest", "budget", "spend", "cost", "expense", "save", "saving")):
+        return "finance"
     return "general"
 
 
 def _branch_factor(branch: str) -> float:
-    """Translate scenario wording into a transparent multiplier for starter rates."""
     text = branch.lower()
-    if any(word in text for word in ("pessimistic", "worst", "high risk", "aggressively", "aggressive", "rapidly")):
-        return 1.5 if any(word in text for word in ("aggressively", "aggressive", "rapidly")) else -0.5
-    if any(word in text for word in ("risk", "avoid", "reduce", "delay", "cautious", "conservative")):
+    if any(word in text for word in ("pessimistic", "worst", "high risk")):
         return -0.5
-    if any(word in text for word in ("optimistic", "strong", "focus", "pursue", "best", "increase", "intensive")):
+    if any(word in text for word in ("aggressively", "aggressive", "rapidly", "intensive", "commit")):
         return 1.5
-    if any(word in text for word in ("balanced", "realistic", "moderate", "gradually", "part-time", "steady")):
+    if any(word in text for word in ("risk", "avoid", "reduce", "delay", "cautious", "conservative", "smaller workload")):
+        return -0.5
+    if any(word in text for word in ("optimistic", "strong", "focus", "pursue", "best", "increase")):
+        return 1.5
+    if any(word in text for word in ("balanced", "realistic", "moderate", "gradually", "part-time", "steady", "routine")):
         return 0.5
     if any(word in text for word in ("continue", "maintain", "current", "baseline", "keep")):
         return 0.0
@@ -38,7 +41,6 @@ def _branch_factor(branch: str) -> float:
 
 
 def _monthly_rate(key: str, decision_type: str) -> float:
-    """Starter monthly rate by metric and decision domain; not a real-world forecast."""
     name = key.lower()
     if decision_type == "marketing":
         if any(word in name for word in ("revenue", "sales")):
@@ -73,48 +75,62 @@ def _monthly_rate(key: str, decision_type: str) -> float:
     return 0.03
 
 
-def _monthly_changes(
-    state: dict[str, float],
-    decision_type: str,
-    factor: float,
-) -> dict[str, float]:
-    changes: dict[str, float] = {}
-    for key, value in state.items():
-        rate = _monthly_rate(key, decision_type)
-        changes[key] = round(value * rate * factor, 2)
-    return changes
-
-
-def simulate(
-    initial_state: dict[str, float],
-    branch: str,
-    months: int,
-    decision: str = "",
-) -> Scenario:
+def simulate(initial_state: dict[str, float], branch: str, months: int, decision: str = "") -> Scenario:
     state = WorldState(initial_state)
     timeline: list[StateSnapshot] = []
     decision_type = _decision_type(decision)
     factor = _branch_factor(branch)
 
-    for month in range(1, months + 1):
-        changes = _monthly_changes(state.values, decision_type, factor)
-        updated = state.apply(changes)
-        events = [
-            f"{key} {'increased' if change > 0 else 'decreased' if change < 0 else 'stayed unchanged'} by {abs(change):g} "
-            f"(starter rate {(_monthly_rate(key, decision_type) * factor * 100):g}% for this scenario)"
-            for key, change in changes.items()
-        ]
-        timeline.append(
-            StateSnapshot(month=month, values=deepcopy(updated), events=events)
-        )
+    if decision_type == "learning":
+        text = branch.lower()
+        if any(word in text for word in ("intensive", "aggressive", "commit")):
+            weekly_hours, project_rate, skill_rate, monthly_spend = 10.0, 0.75, 1.5, 1600.0
+        elif any(word in text for word in ("cautious", "reduce", "smaller workload", "risk")):
+            weekly_hours, project_rate, skill_rate, monthly_spend = 3.0, 0.25, 0.5, 400.0
+        elif any(word in text for word in ("balanced", "steady", "gradually", "routine")):
+            weekly_hours, project_rate, skill_rate, monthly_spend = 6.0, 0.5, 1.0, 800.0
+        else:
+            weekly_hours, project_rate, skill_rate, monthly_spend = 6.0, 0.4, 0.75, 700.0
+
+        # Set a transparent illustrative baseline for a learning-specific scenario.
+        state.values.setdefault("study_hours_per_week", 6.0)
+        state.values.setdefault("projects_completed", 0.0)
+        state.values.setdefault("skills_practiced", 0.0)
+        state.values.setdefault("learning_budget_remaining_inr", 0.0)
+        for month in range(1, months + 1):
+            previous_budget = state.values["learning_budget_remaining_inr"]
+            actual_spend = min(max(previous_budget, 0.0), monthly_spend)
+            updated = state.apply({
+                "study_hours_per_week": round(weekly_hours - state.values["study_hours_per_week"], 2),
+                "projects_completed": project_rate,
+                "skills_practiced": skill_rate,
+                "learning_budget_remaining_inr": -actual_spend,
+            })
+            # Study hours represent the selected routine, not a cumulative total.
+            updated["study_hours_per_week"] = weekly_hours
+            state.values["study_hours_per_week"] = weekly_hours
+            events = [
+                f"Illustrative plan: {weekly_hours:g} study hours per week",
+                f"Project progress: +{project_rate:g} project-equivalents this month",
+                f"Learning spend: ₹{actual_spend:,.0f}; budget remaining ₹{updated['learning_budget_remaining_inr']:,.0f}",
+            ]
+            timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
+    else:
+        for month in range(1, months + 1):
+            changes = {
+                key: round(value * _monthly_rate(key, decision_type) * factor, 2)
+                for key, value in state.values.items()
+            }
+            updated = state.apply(changes)
+            events = [
+                f"{key} {'increased' if change > 0 else 'decreased' if change < 0 else 'stayed unchanged'} by {abs(change):g} "
+                f"(illustrative starter rate {(_monthly_rate(key, decision_type) * factor * 100):g}%)"
+                for key, change in changes.items()
+            ]
+            timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
 
     return Scenario(name=branch.title(), assumption=branch, timeline=timeline)
 
 
-def run_simulation(
-    initial_state: dict[str, float],
-    branches: list[str],
-    months: int,
-    decision: str = "",
-) -> list[Scenario]:
+def run_simulation(initial_state: dict[str, float], branches: list[str], months: int, decision: str = "") -> list[Scenario]:
     return [simulate(initial_state, branch, months, decision) for branch in branches]
