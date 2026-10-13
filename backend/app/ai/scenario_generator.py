@@ -12,6 +12,20 @@ def _fallback_branches(decision: str) -> list[str]:
     """Choose domain-specific paths when Gemini is unavailable."""
     text = decision.lower()
 
+    if any(word in text for word in ("stock market", "stock-market", "stock trading", "day trading", "paper trading", "learn trading", "learning trading", "technical analysis")):
+        return [
+            "Build a consistent stock-market learning routine while keeping real money out of the process",
+            "Follow a structured financial-analysis course and practice concepts with a paper portfolio",
+            "Study long-term investing principles and test written strategies with historical data",
+            "Combine study with paper trading and review a learning journal before considering real-money risk",
+        ]
+    if any(word in text for word in ("undergraduate", "join ug", "college", "university", "degree", "get into job", "job after school", "workforce", "study or work", "study vs job")):
+        return [
+            "Enroll in undergraduate study and budget for the full course",
+            "Enter the workforce first and build experience while saving for study",
+            "Work part-time while pursuing a degree if schedule and admission rules allow",
+            "Compare scholarships, accredited lower-cost programs, and a planned deferred start",
+        ]
     if any(word in text for word in ("life insurance", "term insurance", "life cover", "life coverage")):
         return [
             "Compare affordable term-life cover for the needed protection period",
