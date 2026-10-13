@@ -227,18 +227,20 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
         state.values.setdefault("study_hours_per_week", 6.0)
         state.values.setdefault("projects_completed", 0.0)
         state.values.setdefault("skills_practiced", 0.0)
-        state.values.setdefault("learning_budget_remaining_inr", 0.0)
-        # Put the most useful learning outcomes first so compact UI cards show them.
-        preferred = ("projects_completed", "skills_practiced", "study_hours_per_week", "learning_budget_remaining_inr")
+        state.values.setdefault("learning_budget_inr", 0.0)
+        state.values.setdefault("learning_cost_inr", 0.0)
+        # Put domain-relevant learning outcomes first for the cards and chart.
+        preferred = ("projects_completed", "skills_practiced", "study_hours_per_week", "learning_cost_inr", "learning_budget_inr")
         state.values = {key: state.values[key] for key in preferred} | {key: value for key, value in state.values.items() if key not in preferred}
         for month in range(1, months + 1):
-            previous_budget = state.values["learning_budget_remaining_inr"]
-            actual_spend = min(max(previous_budget, 0.0), monthly_spend)
+            available_budget = state.values["learning_budget_inr"]
+            actual_spend = min(max(available_budget, 0.0), monthly_spend) if available_budget > 0 else monthly_spend
             updated = state.apply({
                 "study_hours_per_week": round(weekly_hours - state.values["study_hours_per_week"], 2),
                 "projects_completed": project_rate,
                 "skills_practiced": skill_rate,
-                "learning_budget_remaining_inr": -actual_spend,
+                "learning_cost_inr": actual_spend,
+                "learning_budget_inr": -actual_spend if available_budget > 0 else 0.0,
             })
             # Study hours represent the selected routine, not a cumulative total.
             updated["study_hours_per_week"] = weekly_hours
