@@ -12,6 +12,7 @@ from .ai.decision_extractor import extract_decision
 from .ai.scenario_generator import generate_branches_with_source
 from .models import SimulationRequest, SimulationResponse
 from .engine.simulation import run_simulation
+from .engine.domains import DOMAIN_LABELS, METRIC_CATALOG, classify_domain, domain_assumptions, domain_metadata
 
 app = FastAPI(
     title="WhatIf AI",
@@ -34,6 +35,12 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
+
+
+@app.get("/domains")
+def domains() -> dict:
+    """Return supported domains and metric definitions for the frontend."""
+    return {"domains": [{"id": key, "label": label, "metrics": METRIC_CATALOG[key]} for key, label in DOMAIN_LABELS.items()]}
 
 
 @app.get("/health")
@@ -79,6 +86,7 @@ def simulate(request: SimulationRequest) -> SimulationResponse:
     else:
         branches, branch_source = generate_branches_with_source(request.decision)
 
+    domain = classify_domain(request.decision)
     scenarios = run_simulation(
         initial_state=state,
         branches=branches,
