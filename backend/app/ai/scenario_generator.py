@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import json
+import os
+from typing import Any
 
-def generate_branches(decision: str) -> list[str]:
-    """Generate a small set of scenario branches using local keyword rules.
 
-    This function requires no cloud model, API key, or network connection.
-    It creates scenario labels, not predictions or domain-specific facts.
-    """
+def _fallback_branches(decision: str) -> list[str]:
+    """Generate scenario labels locally when Gemini is not configured or fails."""
     text = decision.lower()
 
     if any(word in text for word in ("job", "career", "quit", "resign", "startup", "business")):
@@ -55,3 +55,51 @@ def generate_branches(decision: str) -> list[str]:
         "take a balanced approach",
         "choose a cautious approach to reduce risk",
     ]
+
+
+def _generate_with_gemini(decision: str, api_key: str) -> list[str] | None:
+    """Ask Gemini for structured scenario labels; return None on any failure."""
+    try:
+        from google import genai
+
+        client = genai.Client(api_key=api_key)
+        model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+        prompt = f"""You are the scenario-ideation component of WhatIf AI.
+Generate 3 to 5 meaningfully different, concise scenario branch labels for the
+user's decision. Include a reasonable baseline and contrasting approaches where
+appropriate. Do not claim to know the future, invent numeric outcomes, or provide
+advice as a certainty. Return JSON only in this shape:
+{{"branches": ["short scenario label", "..."]}}
+
+User decision:
+{decision}"""
+        response = client.models.generate_content(
+            model=model,
+            contents=prompt,
+            config={"response_mime_type": "application/json"},
+        )
+        payload: Any = json.loads(response.text)
+        branches = payload.get("branches") if isinstance(payload, dict) else None
+        if not isinstance(branches, list):
+            return None
+        cleaned = [item.strip() for item in branches if isinstance(item, str) and item.strip()]
+        # Keep the API's documented maximum of eight branches and reject empty output.
+        return cleaned[:8] if 3 <= len(cleaned) <= 8 else None
+    except Exception:
+        # Keep simulations available if the key, network, model, or response fails.
+        return None
+
+
+def scenario_generation_mode() -> str:
+    """Return the configured generation mode for response transparency."""
+    return "Gemini API" if os.getenv("GEMINI_API_KEY") else "local keyword rules"
+
+
+def generate_branches(decision: str) -> list[str]:
+    """Generate branches with Gemini when configured, otherwise use local rules."""
+    api_key = os.getenv("GEMINI_API_KEY")
+    if api_key:
+        branches = _generate_with_gemini(decision, api_key)
+        if branches:
+            return branches
+    return _fallback_branches(decision)
