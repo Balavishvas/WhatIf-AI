@@ -4,6 +4,7 @@ from copy import deepcopy
 
 from ..models import Scenario, StateSnapshot
 from .state import WorldState
+from .domains import classify_domain
 
 
 def _decision_type(decision: str) -> str:
@@ -111,6 +112,104 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
                 f"Modeled cumulative ownership cost: ₹{updated['cumulative_ownership_cost_inr']:,.0f} including stated upfront cost.",
             ]
             timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
+    elif decision_type == "stock_learning":
+        # No profit, return, or trading win-rate prediction: only learning-plan milestones.
+        branch_text = branch.lower()
+        if any(word in branch_text for word in ("paper trading", "without immediate financial risk", "cautious", "risk")):
+            hours, sessions, strategies, concepts, spend = 4.0, 8.0, 1.0, 2.0, 500.0
+        elif any(word in branch_text for word in ("course", "certification", "structured")):
+            hours, sessions, strategies, concepts, spend = 6.0, 4.0, 1.0, 3.0, 1800.0
+        elif any(word in branch_text for word in ("day trading", "intensive", "aggressive")):
+            hours, sessions, strategies, concepts, spend = 10.0, 12.0, 2.0, 3.0, 1200.0
+        else:
+            hours, sessions, strategies, concepts, spend = 6.0, 6.0, 1.0, 2.0, 700.0
+        state.values.setdefault("study_hours_per_week", 0.0)
+        state.values.setdefault("paper_trading_sessions", 0.0)
+        state.values.setdefault("strategies_tested", 0.0)
+        state.values.setdefault("concepts_practiced", 0.0)
+        state.values.setdefault("learning_cost_inr", 0.0)
+        for month in range(1, months + 1):
+            updated = state.apply({
+                "paper_trading_sessions": sessions,
+                "strategies_tested": strategies,
+                "concepts_practiced": concepts,
+                "learning_cost_inr": spend,
+            })
+            updated["study_hours_per_week"] = hours
+            state.values["study_hours_per_week"] = hours
+            events = [
+                f"Illustrative learning plan: {hours:g} study hours per week.",
+                f"Practice target: {sessions:g} paper-trading sessions and {strategies:g} strategy tests this month.",
+                f"Planned learning spend: ₹{spend:,.0f} this month.",
+                "No trading profits, market returns, or win rates are predicted.",
+            ]
+            timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
+    elif decision_type == "education_career":
+        branch_text = branch.lower()
+        study_path = any(word in branch_text for word in ("study", "college", "undergraduate", "degree", "academic"))
+        work_path = any(word in branch_text for word in ("workforce", "job", "work while", "career", "employment"))
+        hybrid = any(word in branch_text for word in ("part-time", "hybrid", "while working"))
+        state.values.setdefault("education_cost_inr", 0.0)
+        state.values.setdefault("monthly_take_home_inr", 0.0)
+        state.values.setdefault("study_hours_per_week", 0.0)
+        state.values.setdefault("work_experience_months", 0.0)
+        state.values.setdefault("cumulative_education_cost_inr", 0.0)
+        state.values.setdefault("cumulative_earnings_inr", 0.0)
+        for month in range(1, months + 1):
+            tuition_monthly = max(0.0, state.values["education_cost_inr"]) / max(months, 1) if study_path else 0.0
+            earnings = max(0.0, state.values["monthly_take_home_inr"]) if work_path or hybrid else 0.0
+            updated = state.apply({
+                "cumulative_education_cost_inr": tuition_monthly,
+                "cumulative_earnings_inr": earnings,
+                "work_experience_months": 1.0 if work_path or hybrid else 0.0,
+            })
+            updated["study_hours_per_week"] = 6.0 if hybrid else 12.0 if study_path else 0.0
+            state.values["study_hours_per_week"] = updated["study_hours_per_week"]
+            events = [
+                f"Modeled education cost this month: ₹{tuition_monthly:,.0f} from the supplied total-cost input." if study_path else "No education cost was applied to this work-first path.",
+                f"Modeled take-home earnings this month: ₹{earnings:,.0f} from the supplied monthly-pay input.",
+                "Admission, graduation, hiring and future salary are not predicted.",
+            ]
+            timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
+    elif decision_type in ("life_insurance", "health_insurance", "insurance"):
+        # Policy details are user-provided quote inputs. Never invent benefits or claim outcomes.
+        state.values.setdefault("monthly_premium_inr", 0.0)
+        state.values.setdefault("coverage_amount_inr", 0.0)
+        state.values.setdefault("annual_premium_inr", 0.0)
+        if state.values["annual_premium_inr"] <= 0 and state.values["monthly_premium_inr"] > 0:
+            state.values["annual_premium_inr"] = round(state.values["monthly_premium_inr"] * 12, 2)
+        if state.values.get("monthly_income_inr", 0.0) > 0 and state.values["monthly_premium_inr"] > 0:
+            state.values["premium_share_of_income_pct"] = round(state.values["monthly_premium_inr"] / state.values["monthly_income_inr"] * 100, 2)
+        for month in range(1, months + 1):
+            updated = state.snapshot()
+            updated["cumulative_premium_paid_inr"] = round(state.values["monthly_premium_inr"] * month, 2)
+            events = [
+                f"Cumulative premium at the supplied monthly quote: ₹{updated['cumulative_premium_paid_inr']:,.0f}.",
+                "Coverage, exclusions, waiting periods, underwriting and claim decisions depend on the actual policy and insurer.",
+                "A missing premium or coverage amount remains unknown; zero is a placeholder, not an estimate.",
+            ]
+            timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
+    elif decision_type == "personal_finance":
+        state.values.setdefault("monthly_income_inr", 0.0)
+        state.values.setdefault("monthly_expenses_inr", 0.0)
+        state.values.setdefault("savings_inr", 0.0)
+        state.values["monthly_surplus_inr"] = round(state.values["monthly_income_inr"] - state.values["monthly_expenses_inr"], 2)
+        for month in range(1, months + 1):
+            surplus = state.values["monthly_surplus_inr"]
+            updated = state.apply({"savings_inr": surplus})
+            events = [f"Modeled savings change by ₹{surplus:,.0f} using supplied monthly income and expenses."]
+            timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
+    elif decision_type == "health_habit":
+        branch_text = branch.lower()
+        target = 3.0 if any(word in branch_text for word in ("cautious", "gradual", "reduce")) else 5.0 if any(word in branch_text for word in ("intensive", "daily", "aggressive")) else 4.0
+        state.values.setdefault("habit_days_per_week", 0.0)
+        state.values.setdefault("habit_sessions_completed", 0.0)
+        state.values.setdefault("habit_cost_inr", 0.0)
+        for month in range(1, months + 1):
+            updated = state.apply({"habit_sessions_completed": target * 4.0, "habit_cost_inr": max(0.0, state.values["habit_cost_inr"])})
+            updated["habit_days_per_week"] = target
+            state.values["habit_days_per_week"] = target
+            timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=[f"Illustrative habit target: {target:g} days per week.", "Actual health effects are individual and are not predicted."]))
     elif decision_type == "learning":
         text = branch.lower()
         if any(word in text for word in ("intensive", "aggressive", "commit")):
