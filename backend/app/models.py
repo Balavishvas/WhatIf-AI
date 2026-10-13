@@ -27,6 +27,9 @@ class SimulationResponse(BaseModel):
     decision: str
     scenarios: list[Scenario]
     assumptions: list[str]
+    domain: str = "general"
+    domain_label: str = "General decision"
+    metrics: list[dict[str, str]] = Field(default_factory=list)
     safety_notice: str | None = None
     disclaimer: str = (
         "This is a scenario simulation, not a prediction of the actual future."
