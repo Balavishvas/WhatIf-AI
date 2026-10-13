@@ -147,7 +147,7 @@ def extract_decision(decision: str, months: int = 3) -> ExtractedDecision:
             model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
             response = client.models.generate_content(
                 model=model,
-                contents=f"{SYSTEM_PROMPT}\n\nUser decision:\n{decision}",
+                contents=f"{SYSTEM_PROMPT}\nDetected domain: {classify_domain(decision)}. Use only relevant domain metrics and never invent missing numeric values.\n\nUser decision:\n{decision}",
                 config={"response_mime_type": "application/json"},
             )
             data: Any = json.loads(response.text)
