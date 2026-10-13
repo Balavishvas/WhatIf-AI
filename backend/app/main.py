@@ -75,9 +75,25 @@ def simulate(request: SimulationRequest) -> SimulationResponse:
             disclaimer="This tool does not provide medical advice or predict individual health outcomes.",
         )
 
+    domain = classify_domain(request.decision)
     extracted = extract_decision(request.decision, request.months)
-    # Keep extracted domain metrics and let explicit UI values override matching keys.
-    state = {**extracted.variables, **request.initial_state}
+    # For typed domains, discard unrelated LLM-produced keys rather than showing
+    # revenue/customer metrics on an insurance or learning decision.
+    allowed_keys = {metric["key"] for metric in METRIC_CATALOG[domain]}
+    allowed_keys.update({
+        "annual_premium_inr", "premium_share_of_income_pct", "cumulative_premium_paid_inr",
+        "monthly_income_inr", "monthly_expenses_inr", "savings_inr", "monthly_surplus_inr",
+        "cumulative_education_cost_inr", "cumulative_earnings_inr", "habit_sessions_completed",
+        "habit_cost_inr", "upfront_cost_inr",
+    })
+    extracted_variables = extracted.variables if domain in ("business", "general", "learning") else {
+        key: value for key, value in extracted.variables.items() if key in allowed_keys
+    }
+    filtered_request_state = request.initial_state if domain in ("business", "general", "learning") else {
+        key: value for key, value in request.initial_state.items() if key in allowed_keys
+    }
+    # Explicit user-entered values override extracted values.
+    state = {**extracted_variables, **filtered_request_state}
     months = extracted.horizon_months or request.months
 
     if request.branches:
@@ -86,7 +102,6 @@ def simulate(request: SimulationRequest) -> SimulationResponse:
     else:
         branches, branch_source = generate_branches_with_source(request.decision)
 
-    domain = classify_domain(request.decision)
     scenarios = run_simulation(
         initial_state=state,
         branches=branches,
