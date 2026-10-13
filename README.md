@@ -59,7 +59,7 @@ Then open http://127.0.0.1:5500.
 For Gemini-powered branch generation, set your key in the backend terminal before starting Uvicorn:
 ```powershell
 $env:GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"
-$env:GEMINI_MODEL = "gemini-3.6-flash-lite"
+$env:GEMINI_MODEL = "gemini-3.5-flash-lite"
 ```
 
 Without a key, the backend uses its local branch-generation fallback. Never commit your API key to Git.
