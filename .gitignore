@@ -10,3 +10,7 @@ dist/
 build/
 .pytest_cache/
 .coverage
+
+# Allow safe example configuration files while ignoring real secrets
+!.env.example
+!backend/.env.example
