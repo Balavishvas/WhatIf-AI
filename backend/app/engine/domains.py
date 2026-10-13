@@ -139,6 +139,9 @@ def domain_assumptions(domain: str, values: dict[str, float]) -> list[str]:
             assumptions.append("Some ownership-cost inputs are missing; zero placeholders are not estimates.")
     elif domain == "education_career":
         assumptions.append("Employment, admission, salary and graduation outcomes are uncertain; any values are scenario inputs, not guarantees.")
+    elif domain == "business":
+        assumptions.append("Business trajectories use illustrative monthly rates selected by scenario wording; replace them with evidence-backed rates before relying on the comparison.")
+        assumptions.append("Net cash flow is calculated from the supplied revenue and operating-cost figures; it does not include unprovided taxes, financing, working capital or one-off costs.")
     elif domain == "stock_learning":
         assumptions.append("No trading profit or investment return is forecast. Metrics represent learning plans and paper-trading practice only.")
     return assumptions
