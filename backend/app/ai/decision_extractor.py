@@ -62,7 +62,8 @@ def _fallback_extract(decision: str, months: int) -> ExtractedDecision:
     if domain == "stock_learning":
         variables = {
             "study_hours_per_week": 0.0,
-            "learning_budget_inr": amount or 0.0,\n            "learning_cost_inr": 0.0,
+            "learning_budget_inr": amount or 0.0,
+            "learning_cost_inr": 0.0,
             "paper_trading_sessions": 0.0,
             "strategies_tested": 0.0,
             "concepts_practiced": 0.0,
