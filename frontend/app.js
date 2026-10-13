@@ -206,6 +206,14 @@
       const raw = $(id).value.trim();
       if (raw !== "" && Number.isFinite(Number(raw)) && Number(raw) >= 0) initial_state[key] = Number(raw);
     });
+    // Remove old results immediately so a failed/new request can never look like its output.
+    latestResponse = null;
+    scenarioGrid.replaceChildren();
+    $("chartLegend").replaceChildren();
+    metricSelect.replaceChildren(new Option("Choose metric", ""));
+    chart.innerHTML = '<text x="450" y="145" fill="#8290a0" font-size="13" text-anchor="middle">Generating paths for your new question…</text>';
+    resultsSection.hidden = true;
+    emptyState.hidden = false;
     loading(true);
     setApiStatus("RUNNING SIMULATION", "checking");
     try {
