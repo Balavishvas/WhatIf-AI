@@ -71,6 +71,70 @@
     const rows = scenario.timeline || [];
     return rows.length ? rows[0].values || {} : {};
   }
+  function decisionDomain(decision) {
+    const text = String(decision || "").toLowerCase();
+    if (/life insurance|term insurance|life cover/.test(text)) return "life";
+    if (/health insurance|medical insurance|mediclaim|hospitalization/.test(text)) return "health";
+    if (/insurance|policy premium|sum insured|deductible|co-pay|copay/.test(text)) return "insurance";
+    if (/bike|motorcycle|scooter|car|vehicle|600 ?cc|emi|fuel|commuting/.test(text)) return "vehicle";
+    if (/learn|learning|study|skill|course|project|portfolio|career|job|salary/.test(text)) return "learning";
+    if (/business|startup|customer|revenue|marketing|sales|hire/.test(text)) return "business";
+    return "general";
+  }
+  function detailItems(domain, decision, scenario) {
+    const common = ["What assumptions would change this outcome?", "Which costs or constraints have not been supplied?", "What evidence should be checked before committing?"];
+    const byDomain = {
+      vehicle: ["Upfront price and down payment; compare loan APR, fees, EMI and total repayment.", "Fuel based on your monthly distance and realistic mileage; include servicing, tyres and repairs.", "Insurance quote, coverage, exclusions, deductibles and renewal costs.", "Registration/tax and protective gear where applicable; estimate resale value cautiously.", "Compare buying new, buying inspected used, and delaying while saving."],
+      life: ["Estimate coverage needs from dependants, debts, income replacement and future obligations.", "Compare premiums for the same coverage and duration; verify whether premiums can change.", "Read exclusions, contestability terms, lapse/grace-period rules and claim requirements in the actual policy.", "Check existing employer cover and whether it continues after leaving the job.", "Compare term coverage with other product types on their actual benefits, fees and lock-ins; don't assume they are interchangeable."],
+      health: ["Compare sum insured, room limits, co-pay, deductibles and sub-limits.", "Check pre-existing-condition and specific-treatment waiting periods, exclusions and network hospitals.", "Compare individual cover with family-floater limits for each covered person.", "Include renewal affordability and the possibility of out-of-pocket expenses.", "Read the policy wording and insurer disclosures; benefits vary by plan."],
+      insurance: ["Compare premium with the actual coverage and benefits provided.", "Check exclusions, waiting periods, deductibles/co-pay, limits and claim conditions.", "Check renewal terms, premium changes and affordability over time.", "Use the official policy wording and written insurer quotes, not assumed policy terms."],
+      learning: ["Time available each week and consistency over the selected horizon.", "Course, equipment and certification costs against the stated budget.", "Define a project milestone and a skill checklist that can be verified.", "Treat project and skill counts as planning targets, not predicted achievements."],
+      business: ["Initial spend, recurring costs, cash runway and downside exposure.", "Define the metric to optimize and how it will be measured.", "Test a small reversible experiment before scaling spend.", "Separate user-supplied figures from assumptions and modelled values."],
+      general: common
+    };
+    return byDomain[domain] || common;
+  }
+  function openScenarioDetails(scenario, index, data) {
+    const dialog = $("scenarioDialog");
+    const domain = decisionDomain(data.decision);
+    const titleText = title(scenario.name || "Alternative path");
+    $("detailTitle").textContent = titleText;
+    $("detailSummary").textContent = scenario.assumption || "A possible path based on your decision.";
+    const highlights = $("detailHighlights");
+    highlights.replaceChildren();
+    const timeline = scenario.timeline || [];
+    const last = timeline.length ? timeline[timeline.length - 1].values || {} : {};
+    const first = timeline.length ? timeline[0].values || {} : {};
+    const entries = Object.entries(last).slice(0, 6);
+    if (entries.length) entries.forEach(([key, value]) => {
+      const box = document.createElement("div");
+      box.className = "detail-highlight";
+      const delta = typeof value === "number" && typeof first[key] === "number" ? value - first[key] : null;
+      box.innerHTML = '<span>' + escape(metricName(key)) + '</span><strong>' + escape(format(value)) + '</strong><small>' + (delta === null ? "No baseline available" : "Change from first modeled month: " + escape((delta > 0 ? "+" : "") + format(delta))) + '</small>';
+      highlights.appendChild(box);
+    });
+    if (!entries.length) highlights.innerHTML = '<p class="dialog-muted">No numeric starting values were supplied for this scenario. The path below is qualitative until you add the relevant real-world inputs.</p>';
+    const list = $("detailConsiderations");
+    list.replaceChildren();
+    detailItems(domain, data.decision, scenario).forEach((item) => { const li = document.createElement("li"); li.textContent = item; list.appendChild(li); });
+    const timelineBox = $("detailTimeline");
+    timelineBox.replaceChildren();
+    timeline.slice(0, 24).forEach((row) => {
+      const line = document.createElement("div");
+      line.className = "detail-timeline-row";
+      const values = Object.entries(row.values || {}).map(([key, value]) => metricName(key) + ": " + format(value)).join(" · ");
+      const events = (row.events || []).join(" · ");
+      const month = document.createElement("strong"); month.textContent = row.month === 0 ? "START" : "MONTH " + String(row.month).padStart(2, "0");
+      const body = document.createElement("span"); body.textContent = [values, events].filter(Boolean).join(" — ") || "No details returned.";
+      line.append(month, body); timelineBox.appendChild(line);
+    });
+    if (!timeline.length) timelineBox.textContent = "No month-by-month data is available yet.";
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+  }
+  $("closeScenarioDialog").addEventListener("click", () => $("scenarioDialog").close());
+  $("scenarioDialog").addEventListener("click", (event) => { if (event.target === $("scenarioDialog")) $("scenarioDialog").close(); });
+
   function renderScenarios(data) {
     const scenarios = Array.isArray(data.scenarios) ? data.scenarios : [];
     scenarioGrid.replaceChildren();
@@ -93,8 +157,10 @@
       card.innerHTML = '<div class="scenario-top"><span class="scenario-index">PATH / ' + String(index + 1).padStart(2, "0") + '</span><span class="scenario-tag">' + branchTag(scenario.name || scenario.assumption) + '</span></div>' +
         '<h3>' + escape(title(scenario.name || "Alternative path")) + '</h3><p class="scenario-assumption">' + escape(scenario.assumption || "A possible path based on the decision.") + '</p>' +
         '<div class="scenario-stats">' + (stats || '<p class="scenario-assumption">Add numeric starting values to compare metrics.</p>') + '</div>' +
+        '<button class="details-button" type="button">EXPLORE THIS POSSIBILITY <span>↗</span></button>' +
         '<button class="timeline-button" type="button" aria-expanded="false"><span>VIEW TIMELINE · ' + (scenario.timeline || []).length + ' MONTHS</span><span>＋</span></button>' +
         '<div class="timeline-details" hidden>' + (timelineRows || '<p class="scenario-assumption">No timeline details were returned.</p>') + '</div>';
+      card.querySelector(".details-button").addEventListener("click", () => openScenarioDetails(scenario, index, data));
       const toggle = card.querySelector(".timeline-button");
       const details = card.querySelector(".timeline-details");
       toggle.addEventListener("click", () => {
