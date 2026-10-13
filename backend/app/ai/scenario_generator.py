@@ -1,16 +1,45 @@
 from __future__ import annotations
 
 import json
-import os
 import logging
+import os
+from typing import Any
 
 logger = logging.getLogger(__name__)
-from typing import Any
 
 
 def _fallback_branches(decision: str) -> list[str]:
-    """Choose the most specific domain first; investment wording can occur in any domain."""
+    """Choose domain-specific paths when Gemini is unavailable."""
     text = decision.lower()
+
+    if any(word in text for word in ("life insurance", "term insurance", "life cover", "life coverage")):
+        return [
+            "Compare affordable term-life cover for the needed protection period",
+            "Compare a higher coverage amount against the premium budget",
+            "Review existing employer or family coverage before buying another policy",
+            "Delay purchase briefly while comparing policy terms and exclusions",
+        ]
+    if any(word in text for word in ("health insurance", "medical insurance", "hospitalization cover", "mediclaim")):
+        return [
+            "Choose a policy prioritizing adequate hospitalization coverage",
+            "Compare a lower premium with its deductible and co-pay",
+            "Compare individual cover with a family floater",
+            "Review exclusions, waiting periods, and network hospitals before choosing",
+        ]
+    if any(word in text for word in ("insurance", "policy premium", "sum insured", "coverage amount", "deductible", "copay", "co-pay")):
+        return [
+            "Prioritize essential coverage within the premium budget",
+            "Compare broader coverage with the added premium",
+            "Compare deductibles, exclusions, and claim conditions before choosing",
+            "Wait and compare multiple policy terms before committing",
+        ]
+    if any(word in text for word in ("bike", "motorcycle", "scooter", "car", "vehicle", "600 cc", "600cc", "emi", "fuel", "commuting")):
+        return [
+            "Buy now and budget for full ownership costs",
+            "Buy with financing after checking EMI affordability",
+            "Use the vehicle mainly for weekends and limit running costs",
+            "Delay the purchase and save toward a larger down payment",
+        ]
     if any(word in text for word in ("ice cream", "sweets", "sweet", "sugar", "snack", "junk food", "eat every day", "eating every day", "daily diet", "diet", "nutrition", "food habit")):
         return [
             "Keep the habit but choose a smaller, mindful portion",
@@ -62,18 +91,23 @@ def _fallback_branches(decision: str) -> list[str]:
 
 
 def _generate_with_gemini(decision: str, api_key: str) -> list[str] | None:
-    """Ask Gemini for structured scenario labels; return None on any failure."""
+    """Ask Gemini for domain-specific scenario labels, not numeric predictions."""
     try:
         from google import genai
 
         client = genai.Client(api_key=api_key)
         model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
         prompt = f"""You are the scenario-ideation component of WhatIf AI.
-Generate 3 to 5 meaningfully different, concise scenario branch labels for the
-user's decision. Prioritize the decision's main domain (for example learning,
-career, health, or business) over incidental words like invest or budget.
-Include a baseline and contrasting approaches. Do not invent numeric outcomes.
-Return JSON only: {{"branches": ["short scenario label", "..."]}}
+Generate 3 to 5 distinct, practical scenario paths for this decision.
+First identify its main domain and tailor paths to that domain. Do not use generic
+business/finance paths for a personal, vehicle, health, insurance, career, or education
+question. For vehicle decisions consider purchase timing, financing, running costs,
+maintenance, insurance, and use patterns where relevant. For life/health insurance,
+consider coverage needs, affordability, policy duration, exclusions, deductibles or
+waiting periods where relevant. Do not claim to give individualized medical, legal,
+insurance, or financial advice. Do not invent numeric outcomes or policy terms.
+Include a baseline and meaningful alternatives. Return JSON only:
+{{"branches": ["short scenario label", "..."]}}
 
 User decision:
 {decision}"""
@@ -89,7 +123,6 @@ User decision:
         cleaned = [item.strip() for item in branches if isinstance(item, str) and item.strip()]
         return cleaned[:8] if 3 <= len(cleaned) <= 8 else None
     except Exception as exc:
-        # Log the exception type and a short sanitized message, never the API key.
         detail = str(exc).replace(api_key, "[REDACTED]")[:300]
         logger.warning("Gemini scenario generation failed (%s): %s", type(exc).__name__, detail)
         return None
@@ -101,8 +134,8 @@ def generate_branches_with_source(decision: str) -> tuple[list[str], str]:
         branches = _generate_with_gemini(decision, api_key)
         if branches:
             return branches, "Gemini API"
-        return _fallback_branches(decision), "local keyword rules (Gemini unavailable or response invalid)"
-    return _fallback_branches(decision), "local keyword rules (no API key configured)"
+        return _fallback_branches(decision), "local domain rules (Gemini unavailable or response invalid)"
+    return _fallback_branches(decision), "local domain rules (no API key configured)"
 
 
 def generate_branches(decision: str) -> list[str]:
@@ -110,4 +143,4 @@ def generate_branches(decision: str) -> list[str]:
 
 
 def scenario_generation_mode() -> str:
-    return "Gemini API configured" if os.getenv("GEMINI_API_KEY") else "local keyword rules"
+    return "Gemini API configured" if os.getenv("GEMINI_API_KEY") else "local domain rules"
