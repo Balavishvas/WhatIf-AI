@@ -1,12 +1,14 @@
 from fastapi.testclient import TestClient
 
+from app.ai import scenario_generator
 from app.ai.scenario_generator import generate_branches
 from app.main import app
 
 client = TestClient(app)
 
 
-def test_generates_job_and_startup_branches_offline():
+def test_generates_job_and_startup_branches_offline(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     branches = generate_branches("What if I quit my job to build a startup?")
 
     assert len(branches) >= 3
@@ -15,14 +17,16 @@ def test_generates_job_and_startup_branches_offline():
     assert any("aggressively" in branch or "risk" in branch for branch in branches)
 
 
-def test_generates_marketing_branches_offline():
+def test_generates_marketing_branches_offline(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     branches = generate_branches("What if I increase marketing spend?")
 
     assert len(branches) >= 3
     assert any("marketing" in branch for branch in branches)
 
 
-def test_simulate_automatically_generates_branches_when_omitted():
+def test_simulate_automatically_generates_branches_when_omitted(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     response = client.post(
         "/simulate",
         json={
@@ -36,10 +40,11 @@ def test_simulate_automatically_generates_branches_when_omitted():
     payload = response.json()
     assert len(payload["scenarios"]) >= 3
     assert any("marketing" in scenario["assumption"].lower() for scenario in payload["scenarios"])
-    assert any("generated locally" in assumption for assumption in payload["assumptions"])
+    assert any("local keyword rules" in assumption for assumption in payload["assumptions"])
 
 
-def test_user_supplied_branches_are_preserved():
+def test_user_supplied_branches_are_preserved(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     response = client.post(
         "/simulate",
         json={
@@ -55,3 +60,21 @@ def test_user_supplied_branches_are_preserved():
         "custom scenario A",
         "custom scenario B",
     ]
+
+
+def test_uses_gemini_branches_when_available(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    expected = ["baseline", "growth approach", "cautious approach"]
+    monkeypatch.setattr(scenario_generator, "_generate_with_gemini", lambda decision, api_key: expected)
+
+    assert generate_branches("What if I start a business?") == expected
+
+
+def test_falls_back_to_local_rules_when_gemini_fails(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr(scenario_generator, "_generate_with_gemini", lambda decision, api_key: None)
+
+    branches = generate_branches("What if I increase marketing spend?")
+
+    assert len(branches) >= 3
+    assert any("marketing" in branch for branch in branches)
