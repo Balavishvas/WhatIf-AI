@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a0c10">
+  <meta name="description" content="WhatIf AI — explore alternate futures through AI-generated scenarios and transparent simulations.">
+  <title>WhatIf AI — Explore the branches</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="WhatIf AI home"><span class="brand-mark"><span></span><span></span><span></span></span><span>whatif<span class="brand-ai">.ai</span></span></a>
+    <div class="top-center"><span class="live-dot"></span><span>DECISION INTELLIGENCE LAB</span></div>
+    <div class="top-right"><span class="api-state" id="apiState">CONNECTING TO ENGINE</span><span class="avatar">W</span></div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="eyebrow"><span class="eyebrow-line"></span> YOUR NEXT MOVE, SIMULATED <span class="eyebrow-index">01 / 03</span></div>
+      <h1>Every choice creates<br>a <span class="gradient-text">different universe.</span></h1>
+      <p class="hero-copy">Don't ask AI to decide for you. Explore what could happen if you decide differently.</p>
+      <div class="hero-orbit" aria-hidden="true">
+        <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div>
+        <div class="orbit-core"><span>?</span></div>
+        <span class="orbit-node node-a">A</span><span class="orbit-node node-b">B</span><span class="orbit-node node-c">C</span>
+        <span class="orbit-label label-a">POSSIBILITY_01</span><span class="orbit-label label-b">POSSIBILITY_02</span><span class="orbit-label label-c">POSSIBILITY_03</span>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <div class="section-heading"><div><span class="section-kicker">01 — DEFINE THE DECISION</span><h2>What are you wondering about?</h2></div><span class="mono subtle">INPUT / 001</span></div>
+      <form id="decisionForm">
+        <label class="sr-only" for="decision">Describe your decision</label>
+        <div class="decision-input-wrap"><span class="input-glyph">↳</span><textarea id="decision" maxlength="1200" rows="3" placeholder="What if I leave my job to build an AI startup?" required>What if I leave my job to build an AI startup?</textarea><span class="char-count" id="charCount">48 / 1200</span></div>
+        <div class="prompt-row"><span class="mono subtle">NEED A SPARK?</span><button type="button" class="prompt-chip" data-prompt="What if I invest more in marketing for my business?">Scale a business <span>↗</span></button><button type="button" class="prompt-chip" data-prompt="What if I spend 6 months learning AI and building projects?">Learn a new skill <span>↗</span></button><button type="button" class="prompt-chip" data-prompt="What if I quit my job to build an AI startup?">Change careers <span>↗</span></button></div>
+        <div class="controls">
+          <div class="control-group"><label for="months">TIME HORIZON</label><div class="select-shell"><select id="months"><option value="3">3 months</option><option value="6">6 months</option><option value="9">9 months</option><option value="12" selected>12 months</option><option value="18">18 months</option><option value="24">24 months</option></select><span>⌄</span></div></div>
+          <div class="control-group state-control"><label>STARTING STATE <span class="optional">(OPTIONAL)</span></label><div class="metric-inputs"><label><span>Revenue / income</span><input id="revenue" type="number" min="0" step="any" placeholder="10000"></label><label><span>Customers / users</span><input id="customers" type="number" min="0" step="any" placeholder="100"></label><label><span>Costs / expenses</span><input id="cost" type="number" min="0" step="any" placeholder="3000"></label></div></div>
+          <button class="run-button" type="submit" id="runButton"><span class="run-icon">✳</span><span id="runLabel">Explore possibilities</span><span class="run-arrow">↗</span></button>
+        </div>
+        <p class="form-error" id="formError" role="alert"></p>
+      </form>
+    </section>
+
+    <section class="results-section" id="resultsSection" hidden>
+      <div class="section-heading results-heading"><div><span class="section-kicker">02 — THE MULTIVERSE</span><h2>Three ways this could unfold.</h2><p class="results-subtitle" id="resultSubtitle">AI-generated branches · modelled outcomes</p></div><span class="mono subtle" id="resultCount">0 BRANCHES</span></div>
+      <div class="source-strip"><span class="source-pulse"></span><span id="sourceLabel">WAITING FOR ENGINE</span><span class="source-separator">/</span><span>RULE-BASED SIMULATION</span><span class="source-right">ILLUSTRATIVE, NOT A FORECAST</span></div>
+      <div id="scenarioGrid" class="scenario-grid"></div>
+      <div class="chart-panel">
+        <div class="chart-header"><div><span class="section-kicker">03 — TRAJECTORY VIEW</span><h3>Compare the paths</h3></div><label class="chart-select-label" for="metricSelect">METRIC<select id="metricSelect"><option value="">Choose a metric</option></select></label></div>
+        <div id="chartLegend" class="chart-legend"></div>
+        <div class="chart-wrap"><svg id="trajectoryChart" viewBox="0 0 900 280" role="img" aria-label="Scenario timeline chart"></svg></div>
+        <div class="chart-foot"><span>STARTING STATE → SIMULATED TIMELINE</span><span id="chartNote">Select a metric to compare</span></div>
+      </div>
+      <details class="assumptions-panel" open><summary><span><span class="section-kicker">TRANSPARENCY LAYER</span><strong>What the engine assumed</strong></span><span class="details-toggle">−</span></summary><ul id="assumptionsList"></ul></details>
+    </section>
+
+    <section class="empty-state" id="emptyState"><div class="empty-symbol">✳</div><div><span class="section-kicker">A NOTE ON THE FUTURE</span><p>One decision. Multiple possible paths. <span>None guaranteed.</span></p></div><span class="mono subtle">YOU STAY IN CONTROL.</span></section>
+  </main>
+  <footer><a class="brand footer-brand" href="#"><span class="brand-mark"><span></span><span></span><span></span></span><span>whatif<span class="brand-ai">.ai</span></span></a><span>BUILT TO EXPLORE, NOT PREDICT.</span><span class="mono">ENGINE v0.6</span></footer>
+  <script src="./app.js" defer></script>
+</body>
+</html>
