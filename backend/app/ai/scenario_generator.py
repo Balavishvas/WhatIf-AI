@@ -12,7 +12,7 @@ def _fallback_branches(decision: str) -> list[str]:
     """Choose domain-specific paths when Gemini is unavailable."""
     text = decision.lower()
 
-    if any(word in text for word in ("stock market", "stock-market", "stock trading", "day trading", "paper trading", "learn trading", "learning trading", "technical analysis")):
+    if any(word in text for word in ("stock market", "stock-market", "stock marketing", "stock trading", "day trading", "paper trading", "learn trading", "learning trading", "technical analysis")):
         return [
             "Build a consistent stock-market learning routine while keeping real money out of the process",
             "Follow a structured financial-analysis course and practice concepts with a paper portfolio",
