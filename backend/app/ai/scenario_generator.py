@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import json
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 from typing import Any
 
 
@@ -64,7 +67,7 @@ def _generate_with_gemini(decision: str, api_key: str) -> list[str] | None:
         from google import genai
 
         client = genai.Client(api_key=api_key)
-        model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+        model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         prompt = f"""You are the scenario-ideation component of WhatIf AI.
 Generate 3 to 5 meaningfully different, concise scenario branch labels for the
 user's decision. Prioritize the decision's main domain (for example learning,
@@ -85,7 +88,10 @@ User decision:
             return None
         cleaned = [item.strip() for item in branches if isinstance(item, str) and item.strip()]
         return cleaned[:8] if 3 <= len(cleaned) <= 8 else None
-    except Exception:
+    except Exception as exc:
+        # Log the exception type and a short sanitized message, never the API key.
+        detail = str(exc).replace(api_key, "[REDACTED]")[:300]
+        logger.warning("Gemini scenario generation failed (%s): %s", type(exc).__name__, detail)
         return None
 
 
