@@ -73,6 +73,7 @@
   }
   function decisionDomain(decision) {
     const text = String(decision || "").toLowerCase();
+    if (/join ug|undergraduate|college|degree|university|job|workforce|career/.test(text)) return "education";
     if (/life insurance|term insurance|life cover/.test(text)) return "life";
     if (/health insurance|medical insurance|mediclaim|hospitalization/.test(text)) return "health";
     if (/insurance|policy premium|sum insured|deductible|co-pay|copay/.test(text)) return "insurance";
@@ -84,6 +85,7 @@
   function detailItems(domain, decision, scenario) {
     const common = ["What assumptions would change this outcome?", "Which costs or constraints have not been supplied?", "What evidence should be checked before committing?"];
     const byDomain = {
+      education: ["Compare total tuition, exam fees, transport, equipment and living costs for the full course.", "Estimate time until qualification and how the degree matches your target roles.", "For the job-first path, compare take-home pay, work experience, savings and whether part-time study is realistic.", "Include the opportunity cost of studying full time versus earning now, without assuming a guaranteed salary.", "Check admission eligibility, scholarships, internships, placement reports and course accreditation.", "Try a hybrid option such as working while studying, a diploma, or deferring admission for a planned period."],
       vehicle: ["Upfront price and down payment; compare loan APR, fees, EMI and total repayment.", "Fuel based on your monthly distance and realistic mileage; include servicing, tyres and repairs.", "Insurance quote, coverage, exclusions, deductibles and renewal costs.", "Registration/tax and protective gear where applicable; estimate resale value cautiously.", "Compare buying new, buying inspected used, and delaying while saving."],
       life: ["Estimate coverage needs from dependants, debts, income replacement and future obligations.", "Compare premiums for the same coverage and duration; verify whether premiums can change.", "Read exclusions, contestability terms, lapse/grace-period rules and claim requirements in the actual policy.", "Check existing employer cover and whether it continues after leaving the job.", "Compare term coverage with other product types on their actual benefits, fees and lock-ins; don't assume they are interchangeable."],
       health: ["Compare sum insured, room limits, co-pay, deductibles and sub-limits.", "Check pre-existing-condition and specific-treatment waiting periods, exclusions and network hospitals.", "Compare individual cover with family-floater limits for each covered person.", "Include renewal affordability and the possibility of out-of-pocket expenses.", "Read the policy wording and insurer disclosures; benefits vary by plan."],
@@ -205,13 +207,17 @@
     metricSelect.value = keys.has(previous) ? previous : (orderedKeys[0] || "");
     drawChart();
   }
+  function showChartEmpty(message) {
+    chart.innerHTML = '<text x="450" y="130" fill="#c9f27a" font-size="14" text-anchor="middle">' + escape(message) + '</text><text x="450" y="157" fill="#8290a0" font-size="11" text-anchor="middle">Add relevant starting values to compare a numeric trajectory.</text>';
+    $("chartLegend").replaceChildren();
+  }
   function drawChart() {
     const scenarios = latestResponse?.scenarios || [];
     const key = metricSelect.value;
     $("chartNote").textContent = key ? "Metric: " + metricName(key) + " · relative scale" : "Run a simulation to compare paths";
     $("chartLegend").replaceChildren();
     if (!key || !scenarios.length) {
-      chart.innerHTML = '<text x="450" y="145" fill="#8290a0" font-size="13" text-anchor="middle">Your scenario trajectories will appear here.</text>';
+      showChartEmpty("Choose a metric to compare possible paths.");
       return;
     }
     const series = scenarios.map((scenario, index) => {
@@ -221,7 +227,7 @@
     }).filter((item) => item.points.length);
     const values = series.flatMap((item) => item.points.map((point) => point.value));
     if (!values.length) {
-      chart.innerHTML = '<text x="450" y="145" fill="#8290a0" font-size="13" text-anchor="middle">This metric has no numeric values.</text>';
+      showChartEmpty("No numeric values were available for this metric.");
       return;
     }
     const min = Math.min(...values), max = Math.max(...values), span = max - min || Math.max(Math.abs(max) * .1, 1);
