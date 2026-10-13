@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import json
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 import re
 from typing import Any
 
@@ -87,7 +90,7 @@ def extract_decision(decision: str, months: int = 3) -> ExtractedDecision:
             from google import genai
 
             client = genai.Client(api_key=api_key)
-            model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+            model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
             response = client.models.generate_content(
                 model=model,
                 contents=f"{SYSTEM_PROMPT}\n\nUser decision:\n{decision}",
@@ -105,6 +108,7 @@ def extract_decision(decision: str, months: int = 3) -> ExtractedDecision:
                 extracted.variables.setdefault(key, value)
             extracted.assumptions.extend(item for item in local.assumptions if item not in extracted.assumptions)
             return extracted
-        except Exception:
-            pass
+        except Exception as exc:
+            detail = str(exc).replace(api_key, "[REDACTED]")[:300]
+            logger.warning("Gemini decision extraction failed (%s): %s", type(exc).__name__, detail)
     return _fallback_extract(decision, months)
