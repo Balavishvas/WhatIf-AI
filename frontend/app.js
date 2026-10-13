@@ -12,7 +12,7 @@ const scenarioGrid = $("scenarioGrid");
 const metricSelect = $("metricSelect");
 const chart = $("trajectoryChart");
 const COLORS = ["#c5f36a", "#70e1d2", "#b2a0ff", "#ffb87a", "#ff8ea1", "#87b8ff"];
-let latestResponse = null;
+let latestResponse = null;\nlet currentInitialState = {};
 
 function setApiStatus(text, ok = false) {
   $("apiState").textContent = text;
