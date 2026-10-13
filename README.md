@@ -1,123 +1,121 @@
-# WhatIf AI 🔀
+# WhatIf AI ✳
 
 > **Don't predict the future. Explore it.**
 
-WhatIf AI is an AI-powered scenario simulation engine for exploring how different decisions can lead to different possible futures under explicit assumptions.
+WhatIf AI turns a decision into several possible paths, then lets you inspect their illustrative month-by-month outcomes. Gemini can generate scenario branches; a transparent rule-based engine simulates the numeric timeline.
 
-Instead of asking an AI *"What should I do?"*, WhatIf AI asks:
+## The experience
 
-**"What could happen if I choose this?"**
+- **AI-assisted branching:** generate alternative scenario labels with Gemini, with local keyword rules as a fallback.
+- **Scenario-aware simulation:** compare baseline, growth, cautious and other paths using deterministic starter rates.
+- **Trajectory comparison:** view a selected metric across all branches on a chart.
+- **Explainable outputs:** inspect monthly values, change events, scenario source and assumptions.
+- **Decision-first interface:** a dark, animated multiverse-inspired UI that emphasizes exploration over prediction.
 
-## Core idea
+> **Important:** These numbers are illustrative outputs from starter rules, not validated forecasts or financial advice. Gemini generates scenario descriptions; it does not validate the simulation's numeric rates.
 
-A decision becomes a set of possible branches. Each branch has a state, events, assumptions, and measurable changes over time.
-
-```text
-                    DECISION
-                       │
-          ┌────────────┼────────────┐
-          ▼            ▼            ▼
-       Scenario A   Scenario B   Scenario C
-          │            │            │
-       Month 1       Month 1       Month 1
-          │            │            │
-       Month 2       Month 2       Month 2
-          │            │            │
-       Month 3       Month 3       Month 3
-          └────────────┼────────────┘
-                       ▼
-                Compare outcomes
-```
-
-## What makes it different?
-
-WhatIf AI is designed around a **stateful simulation engine**, not a simple chatbot.
-
-- Natural-language decision parsing
-- Explicit world state
-- Branching scenarios
-- Timeline-based simulation
-- State transitions
-- Assumptions and constraints
-- Scenario comparison
-- Re-branching from any point in a timeline
-- AI-generated events
-- Visual future trajectories
-
-### Important
-
-WhatIf AI does **not** claim to predict a person's actual future. It explores possible trajectories based on stated assumptions and simulation rules.
-
-## Project structure
+## Repository layout
 
 ```text
 WhatIf-AI/
 ├── backend/
 │   ├── app/
+│   │   ├── ai/
+│   │   │   ├── decision_extractor.py
+│   │   │   └── scenario_generator.py
+│   │   ├── engine/
+│   │   │   ├── simulation.py
+│   │   │   └── state.py
 │   │   ├── main.py
-│   │   ├── models.py
-│   │   └── simulator.py
+│   │   └── models.py
+│   ├── tests/
 │   └── requirements.txt
-├── .gitignore
-├── LICENSE
-└── README.md
+└── frontend/
+    ├── index.html
+    ├── styles.css
+    └── app.js
 ```
 
-## Quick start
+## Requirements
 
-```bash
+- Python 3.11+
+- A Gemini API key for Gemini-powered generation (optional; local branch generation remains available without it)
+- A modern browser
+
+## Run locally on Windows
+
+### 1. Configure the backend
+
+Open PowerShell in the repository root:
+
+```powershell
 cd backend
-python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# macOS/Linux
-# source .venv/bin/activate
-
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+.env\Scripts\python.exe -m pip install -r requirements.txt
+$env:GEMINI_API_KEY = "YOUR_GEMINI_API_KEY"
+$env:GEMINI_MODEL = "gemini-3.5-flash-lite"
+.env\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
-API docs will be available at:
+If you created your virtual environment with a different folder name, use that environment's Python executable. Keep the key in your terminal or a local ignored environment file—never commit it to Git.
 
+API documentation: http://127.0.0.1:8000/docs
+
+### 2. Run the frontend
+
+Open a **second** PowerShell window:
+
+```powershell
+cd D:\whatif-ai\WhatIf-AI\frontend
+python -m http.server 5500
 ```
-http://127.0.0.1:8000/docs
+
+Open http://127.0.0.1:5500
+
+The frontend calls the backend at `http://127.0.0.1:8000`. Both servers need to be running. To change the API base, set `window.WHATIF_API_BASE` before `app.js` loads.
+
+### 3. Run tests
+
+From the repository root:
+
+```powershell
+cd backend
+.env\Scripts\python.exe -m pytest -q
 ```
 
 ## Example request
 
 ```json
 {
-  "decision": "Spend the next 3 months learning AI",
+  "decision": "What if I quit my job to build an AI startup?",
   "initial_state": {
-    "ai_skill": 20,
-    "web_skill": 70,
-    "available_hours_per_week": 20
+    "revenue": 10000,
+    "customers": 100,
+    "cost": 3000
   },
-  "months": 3,
-  "branches": [
-    "focus on AI",
-    "balance AI and web development",
-    "continue focusing on web development"
-  ]
+  "months": 12,
+  "branches": []
 }
 ```
 
+An empty `branches` array asks the backend to generate scenario branches automatically. The response's `assumptions` array identifies whether branches came from Gemini, local fallback rules, or user-supplied input.
+
+## Current limitations
+
+- The numeric simulation uses deterministic, keyword-driven starter rates.
+- A scenario label is not itself a calibrated model or evidence-based prediction.
+- State variable meanings are user-provided; use meaningful starting values for useful comparisons.
+- Browser frontend is a static app and requires the backend API to be running.
+
 ## Roadmap
 
-- [x] Initial simulation engine
-- [x] Scenario state model
-- [x] Timeline generation
-- [ ] LLM decision parser
-- [ ] LangGraph orchestration
-- [ ] Event generation agent
-- [ ] React visualization
-- [ ] Scenario comparison dashboard
-- [ ] Persistent simulations
-- [ ] Branch-from-history ("What if I changed this?")
-- [ ] Simulation evaluation framework
-
-## Vision
-
-Turn vague **"What if?"** questions into structured, explorable simulations.
+- [x] FastAPI simulation API and world-state engine
+- [x] Gemini-powered scenario generation with local fallback
+- [x] Scenario-specific starter rates and monthly explanations
+- [x] Distinctive interactive frontend and trajectory comparison
+- [x] Automated backend tests and GitHub Actions
+- [ ] Calibrated, domain-specific simulation models
+- [ ] Save and compare previous simulations
+- [ ] Branch from a prior point in a timeline
+- [ ] More robust simulation evaluation
 
 **WhatIf AI — Don't predict the future. Explore it.**
