@@ -9,24 +9,22 @@ from .domains import classify_domain
 
 def _decision_type(decision: str) -> str:
     text = decision.lower()
-    # Prioritize the core domain: "invest in learning AI" is a learning decision,
-    # not a generic finance decision.
-    if any(word in text for word in ("life insurance", "term insurance", "health insurance", "medical insurance", "insurance", "policy premium", "sum insured")):
-        return "insurance"
-    if any(word in text for word in ("bike", "motorcycle", "scooter", "car", "vehicle", "600cc", "600 cc")):
-        return "vehicle"
+    domain = classify_domain(decision)
+    if domain in ("stock_learning", "education_career", "life_insurance", "health_insurance", "insurance", "personal_finance", "health_habit", "vehicle"):
+        return domain
+    if domain == "business":
+        if any(word in text for word in ("quit", "resign", "career", "job", "startup")):
+            return "career"
+        if any(word in text for word in ("hire", "employee", "team", "staff")):
+            return "hiring"
+        if any(word in text for word in ("market", "advertis", "sales", "promotion")):
+            return "marketing"
+        return "career"
     if any(word in text for word in ("learn", "learning", "study", "skill", "practice", "course", "knowledge", "ai", "project", "portfolio")):
         return "learning"
-    if any(word in text for word in ("market", "advertis", "customer", "sales", "promotion")):
-        return "marketing"
-    if any(word in text for word in ("hire", "employee", "team", "staff")):
-        return "hiring"
-    if any(word in text for word in ("startup", "business", "quit", "career", "job", "resign")):
-        return "career"
     if any(word in text for word in ("invest", "budget", "spend", "cost", "expense", "save", "saving")):
         return "finance"
     return "general"
-
 
 def _branch_factor(branch: str) -> float:
     text = branch.lower()
