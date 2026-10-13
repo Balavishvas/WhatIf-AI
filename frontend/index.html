@@ -49,11 +49,11 @@
         <div class="form-divider"></div>
         <div class="input-grid">
           <div class="field horizon-field"><label for="months">TIME HORIZON</label><div class="select-wrap"><select id="months"><option value="3">3 months</option><option value="6">6 months</option><option value="9">9 months</option><option value="12" selected>12 months</option><option value="18">18 months</option><option value="24">24 months</option></select><span>⌄</span></div><p>How far ahead to explore</p></div>
-          <div class="field state-field"><label>STARTING POINT <span class="optional">OPTIONAL</span></label><div class="state-inputs">
+          <div class="field state-field"><label>STARTING POINT <span class="optional">OPTIONAL</span></label><div id="domainInputs" class="state-inputs">
             <label><span>Income / revenue</span><input id="revenue" type="number" min="0" step="any" placeholder="10,000"></label>
             <label><span>Users / customers</span><input id="customers" type="number" min="0" step="any" placeholder="100"></label>
             <label><span>Costs / expenses</span><input id="cost" type="number" min="0" step="any" placeholder="3,000"></label>
-          </div><p>Numbers help compare trajectories</p></div>
+          </div><p id="domainInputHint">Numbers help compare trajectories</p></div>
         </div>
         <div class="form-actions"><p class="privacy-note"><span>↳</span> Your decision stays in this local session.</p><button id="runButton" class="primary-button" type="submit"><span class="button-star">✳</span><span id="runLabel">Explore possible futures</span><span class="button-arrow">↗</span></button></div>
         <p id="formError" class="form-error" role="alert" aria-live="polite"></p>
