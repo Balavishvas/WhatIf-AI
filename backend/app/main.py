@@ -34,8 +34,33 @@ def health() -> dict[str, str]:
     return {"status": "ok", "service": "whatif-ai"}
 
 
+def _health_safety_notice(decision: str) -> str | None:
+    """Avoid fake outcome simulations for potentially dangerous food restriction."""
+    text = decision.lower()
+    food_terms = ("eat", "food", "eating", "fast", "fasting", "starv", "meal", "calorie")
+    restriction_terms = ("don't eat", "dont eat", "not eat", "no food", "without food", "stop eating", "skip meals", "starve", "fast for", "days without")
+    if any(term in text for term in food_terms) and any(term in text for term in restriction_terms):
+        return (
+            "Going without food for several days can be dangerous. WhatIf AI cannot safely predict "
+            "individual medical outcomes for this scenario. Please don't use this simulation to plan "
+            "prolonged food restriction; speak with a healthcare professional before attempting a prolonged fast. "
+            "If you have already gone without food and feel faint, confused, very weak, or unwell, seek urgent medical help."
+        )
+    return None
+
+
 @app.post("/simulate", response_model=SimulationResponse)
 def simulate(request: SimulationRequest) -> SimulationResponse:
+    safety_notice = _health_safety_notice(request.decision)
+    if safety_notice:
+        return SimulationResponse(
+            decision=request.decision,
+            scenarios=[],
+            assumptions=["Health-sensitive request: generic numerical scenarios were intentionally not generated."],
+            safety_notice=safety_notice,
+            disclaimer="This tool does not provide medical advice or predict individual health outcomes.",
+        )
+
     extracted = extract_decision(request.decision, request.months)
     # Keep extracted domain metrics and let explicit UI values override matching keys.
     state = {**extracted.variables, **request.initial_state}
