@@ -282,6 +282,20 @@
   });
   refreshSavedPicker();
 
+  function scenarioCopy(scenario) {
+    const rawName = String(scenario.name || "Alternative path").trim();
+    const colon = rawName.indexOf(":");
+    const rawSummary = String(scenario.assumption || "").trim();
+    if (colon > 0 && colon < 72) {
+      return { heading: rawName.slice(0, colon).trim(), summary: rawName.slice(colon + 1).trim() || rawSummary };
+    }
+    const heading = rawName.length > 76 ? rawName.slice(0, 73).replace(/\\s+\\S*$/, "") + "…" : rawName;
+    const summary = rawSummary && rawSummary.toLowerCase() !== rawName.toLowerCase()
+      ? rawSummary
+      : (rawName.length > heading.length ? rawName : "A possible approach. Open this path to review trade-offs, assumptions and its timeline.");
+    return { heading, summary };
+  }
+
   function renderScenarios(data) {
     const scenarios = Array.isArray(data.scenarios) ? data.scenarios : [];
     scenarioGrid.replaceChildren();
@@ -318,10 +332,11 @@
         const events = (snapshot.events || []).slice(0, 2).map(escape).join(" · ");
         return '<div class="timeline-row"><span>MONTH ' + String(snapshot.month).padStart(2, "0") + '</span><span>' + (values || "No numeric values") + (events ? '<br><small>' + events + '</small>' : "") + '</span></div>';
       }).join("");
+      const copy = scenarioCopy(scenario);
       const card = document.createElement("article");
       card.className = "scenario-card";
       card.innerHTML = '<div class="scenario-top"><span class="scenario-index">PATH / ' + String(index + 1).padStart(2, "0") + '</span><span class="scenario-tag">' + branchTag(scenario.name || scenario.assumption) + '</span></div>' +
-        '<h3>' + escape(title(scenario.name || "Alternative path")) + '</h3><p class="scenario-assumption">' + escape(scenario.assumption || "A possible path based on the decision.") + '</p>' +
+        '<h3>' + escape(title(copy.heading || "Alternative path")) + '</h3><p class="scenario-assumption">' + escape(copy.summary || "A possible path based on the decision.") + '</p>' +
         '<div class="scenario-stats">' + (stats || '<p class="scenario-assumption">Add numeric starting values to compare metrics.</p>') + '</div>' +
         '<button class="details-button" type="button">EXPLORE THIS POSSIBILITY <span>↗</span></button>' +
         '<button class="timeline-button" type="button" aria-expanded="false"><span>VIEW TIMELINE · ' + (scenario.timeline || []).length + ' MONTHS</span><span>＋</span></button>' +
