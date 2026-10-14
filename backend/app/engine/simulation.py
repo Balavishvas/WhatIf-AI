@@ -10,7 +10,7 @@ from .domains import classify_domain
 def _decision_type(decision: str) -> str:
     text = decision.lower()
     domain = classify_domain(decision)
-    if domain in ("stock_learning", "education_career", "life_insurance", "health_insurance", "insurance", "personal_finance", "health_habit", "vehicle"):
+    if domain in ("stock_learning", "education_career", "life_insurance", "health_insurance", "insurance", "personal_finance", "health_habit", "vehicle", "home_finance"):
         return domain
     if domain == "business":
         if any(word in text for word in ("quit", "resign", "career", "job", "startup")):
@@ -109,6 +109,43 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
                 "Ownership costs use only supplied or extracted values; missing values remain ₹0 placeholders, not estimates.",
                 f"Modeled cumulative ownership cost: ₹{updated['cumulative_ownership_cost_inr']:,.0f} including stated upfront cost.",
             ]
+            timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
+    elif decision_type == "home_finance":
+        # Fixed-rate monthly mortgage formula. Unknown inputs remain unknown (no fabricated rate or term).
+        state.values.setdefault("home_price_inr", 0.0)
+        state.values.setdefault("down_payment_inr", 0.0)
+        state.values.setdefault("loan_amount_inr", 0.0)
+        state.values.setdefault("annual_interest_rate_pct", 0.0)
+        state.values.setdefault("loan_term_years", 0.0)
+        price = max(0.0, state.values["home_price_inr"])
+        down = max(0.0, state.values["down_payment_inr"])
+        loan = max(0.0, state.values["loan_amount_inr"] or (price - down if price > 0 else 0.0))
+        rate_pct = max(0.0, state.values["annual_interest_rate_pct"])
+        years = max(0.0, state.values["loan_term_years"])
+        monthly_payment = 0.0
+        total_interest = 0.0
+        if loan > 0 and years > 0:
+            n = int(round(years * 12))
+            monthly_rate = rate_pct / 1200.0
+            if monthly_rate == 0:
+                monthly_payment = loan / n
+            else:
+                factor = (1 + monthly_rate) ** n
+                monthly_payment = loan * monthly_rate * factor / (factor - 1)
+            total_interest = max(0.0, monthly_payment * n - loan)
+        state.values["loan_amount_inr"] = loan
+        state.values["monthly_mortgage_payment_inr"] = round(monthly_payment, 2) if loan > 0 and years > 0 else 0.0
+        state.values["total_interest_paid_inr"] = round(total_interest, 2) if loan > 0 and years > 0 else 0.0
+        state.values["down_payment_inr"] = down
+        for month in range(1, months + 1):
+            updated = state.snapshot()
+            events = []
+            if loan > 0 and years > 0:
+                events.append(f"Estimated fixed-rate monthly principal-and-interest payment: ₹{monthly_payment:,.0f}; rate {rate_pct:g}% per year over {years:g} years.")
+                events.append(f"Estimated total interest over the full loan term: ₹{total_interest:,.0f}, excluding fees and taxes.")
+            else:
+                events.append("Enter loan amount (or home price and down payment), annual interest rate, and loan term to calculate mortgage payments.")
+            events.append("Mortgage figures are formula-based estimates, not lender quotes; property taxes, insurance, fees and variable-rate changes are excluded.")
             timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
     elif decision_type == "stock_learning":
         # No profit, return, or trading win-rate prediction: only learning-plan milestones.
