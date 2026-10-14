@@ -56,7 +56,9 @@
   const title = (value) => String(value || "Scenario").replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
   const escape = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
   const metricLabels = {
-    monthly_mortgage_payment_inr: "Estimated monthly mortgage",
+    monthly_mortgage_payment_inr: "Fixed monthly mortgage payment",
+    cumulative_mortgage_payments_inr: "Cumulative mortgage payments",
+    remaining_mortgage_balance_inr: "Remaining mortgage balance",
     total_interest_paid_inr: "Total loan interest",
     loan_amount_inr: "Mortgage amount",
     home_price_inr: "Home price",
@@ -314,7 +316,7 @@
       const final = finalValues(scenario);
       const start = startValues(scenario);
       const preferredByDomain = {
-        home_finance: ["monthly_mortgage_payment_inr", "total_interest_paid_inr", "loan_amount_inr", "down_payment_inr"],
+        home_finance: ["cumulative_mortgage_payments_inr", "remaining_mortgage_balance_inr", "monthly_mortgage_payment_inr", "total_interest_paid_inr", "loan_amount_inr", "down_payment_inr"],
         vehicle: ["monthly_ownership_cost_inr", "cumulative_ownership_cost_inr", "monthly_emi_inr", "monthly_fuel_cost_inr"],
         life_insurance: ["monthly_premium_inr", "coverage_amount_inr", "annual_premium_inr"],
         health_insurance: ["monthly_premium_inr", "coverage_amount_inr", "deductible_inr", "copay_pct"],
@@ -390,11 +392,15 @@
       }
     })));
     const keys = new Set([...meaningfulValues.entries()].filter(([, values]) => values.some((value) => Math.abs(value) > 0.000001)).map(([key]) => key));
+    const domain = data.domain || decisionDomain(data.decision);
+    if (domain === "home_finance") {
+      keys.add("cumulative_mortgage_payments_inr");
+      keys.add("remaining_mortgage_balance_inr");
+    }
     const previous = metricSelect.value;
     metricSelect.replaceChildren(new Option("Choose metric", ""));
     // Put decision-relevant progress metrics first; financial metrics should not
     // dominate a learning scenario just because a budget was mentioned.
-    const domain = data.domain || decisionDomain(data.decision);
     const preferredByDomain = {
       stock_learning: ["study_hours_per_week", "paper_trading_sessions", "strategies_tested", "concepts_practiced", "learning_cost_inr", "learning_budget_inr"],
       learning: ["study_hours_per_week", "projects_completed", "skills_practiced", "learning_cost_inr"],
@@ -422,18 +428,39 @@
     chart.innerHTML = '<text x="450" y="130" fill="#c9f27a" font-size="14" text-anchor="middle">' + escape(message) + '</text><text x="450" y="157" fill="#8290a0" font-size="11" text-anchor="middle">Add relevant starting values to compare a numeric trajectory.</text>';
     $("chartLegend").replaceChildren();
   }
+  function chartMetricValue(scenario, key, month, rowValues) {
+    if (key !== "cumulative_mortgage_payments_inr" && key !== "remaining_mortgage_balance_inr") return number(rowValues?.[key]);
+    const values = rowValues || {};
+    const loan = Math.max(0, number(values.loan_amount_inr) ?? 0);
+    const payment = Math.max(0, number(values.monthly_mortgage_payment_inr) ?? 0);
+    const rate = Math.max(0, number(values.annual_interest_rate_pct) ?? 0) / 1200;
+    const term = Math.max(0, number(values.loan_term_years) ?? 0);
+    if (key === "cumulative_mortgage_payments_inr") return month * payment;
+    if (loan <= 0 || payment <= 0 || term <= 0) return 0;
+    const n = Math.max(1, Math.round(term * 12));
+    const elapsed = Math.min(Math.max(0, month), n);
+    if (rate === 0) return Math.max(0, loan - payment * elapsed);
+    const factor = Math.pow(1 + rate, elapsed);
+    const balance = loan * factor - payment * ((factor - 1) / rate);
+    return Math.max(0, balance);
+  }
   function drawChart() {
     const scenarios = latestResponse?.scenarios || [];
     const key = metricSelect.value;
-    $("chartNote").textContent = key ? "Metric: " + metricName(key) + " · relative scale" : "Run a simulation to compare paths";
+    const chartLabel = key ? metricName(key) : "";
+    $("chartNote").textContent = key ? "Metric: " + chartLabel + (key === "monthly_mortgage_payment_inr" ? " · fixed-rate payment is expected to stay flat" : " · illustrative modeled trajectory") : "Run a simulation to compare paths";
     $("chartLegend").replaceChildren();
     if (!key || !scenarios.length) {
       showChartEmpty("Choose a metric to compare possible paths.");
       return;
     }
     const series = scenarios.map((scenario, index) => {
-      const points = [{ month: 0, value: number(scenario.timeline?.[0]?.values?.[key]) }];
-      (scenario.timeline || []).forEach((row) => points.push({ month: row.month, value: number(row.values?.[key]) }));
+      const rows = scenario.timeline || [];
+      const firstValues = rows[0]?.values || {};
+      const isDerivedMortgageMetric = key === "cumulative_mortgage_payments_inr" || key === "remaining_mortgage_balance_inr";
+      const points = isDerivedMortgageMetric
+        ? [{ month: 0, value: chartMetricValue(scenario, key, 0, firstValues) }, ...rows.map((row) => ({ month: row.month, value: chartMetricValue(scenario, key, row.month, row.values || {}) }))]
+        : [{ month: 0, value: number(firstValues[key]) }, ...rows.map((row) => ({ month: row.month, value: number(row.values?.[key]) }))];
       return { name: scenario.name || "Path " + (index + 1), color: colors[index % colors.length], points: points.filter((point) => point.value !== null) };
     }).filter((item) => item.points.length);
     const values = series.flatMap((item) => item.points.map((point) => point.value));
