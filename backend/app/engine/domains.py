@@ -8,6 +8,7 @@ DOMAIN_LABELS = {
     "learning": "Education and skill development",
     "education_career": "Education vs career",
     "vehicle": "Vehicle ownership",
+    "home_finance": "Home purchase and mortgage",
     "life_insurance": "Life insurance",
     "health_insurance": "Health insurance",
     "insurance": "Insurance comparison",
@@ -37,6 +38,15 @@ METRIC_CATALOG: dict[str, list[dict[str, str]]] = {
         {"key": "monthly_take_home_inr", "label": "Monthly take-home pay (INR)", "unit": "INR", "kind": "input"},
         {"key": "study_hours_per_week", "label": "Study hours per week", "unit": "hours/week", "kind": "plan"},
         {"key": "work_experience_months", "label": "Work experience (months)", "unit": "months", "kind": "plan"},
+    ],
+    "home_finance": [
+        {"key": "home_price_inr", "label": "Home price (INR)", "unit": "INR", "kind": "input"},
+        {"key": "down_payment_inr", "label": "Down payment (INR)", "unit": "INR", "kind": "input"},
+        {"key": "loan_amount_inr", "label": "Loan amount (INR)", "unit": "INR", "kind": "input"},
+        {"key": "annual_interest_rate_pct", "label": "Annual interest rate (%)", "unit": "%", "kind": "input"},
+        {"key": "loan_term_years", "label": "Loan term (years)", "unit": "years", "kind": "input"},
+        {"key": "monthly_mortgage_payment_inr", "label": "Estimated monthly payment (INR)", "unit": "INR", "kind": "calculated"},
+        {"key": "total_interest_paid_inr", "label": "Total interest over loan (INR)", "unit": "INR", "kind": "calculated"},
     ],
     "vehicle": [
         {"key": "vehicle_purchase_price_inr", "label": "Purchase price (INR)", "unit": "INR", "kind": "input"},
@@ -100,6 +110,8 @@ def classify_domain(decision: str) -> str:
         return "stock_learning"
     if any(p in text for p in ("undergraduate", "join ug", "college", "university", "degree", "get into job", "job after school", "workforce", "study or work", "study vs job")):
         return "education_career"
+    if any(p in text for p in ("mortgage", "home loan", "house loan", "buy a house", "buy a home", "home purchase", "purchase a home", "buying a home", "buying a house", "10 year mortgage", "30 year mortgage")):
+        return "home_finance"
     if any(p in text for p in ("motorcycle", "motorbike", "bike", "scooter", "car", "vehicle", "600 cc", "600cc", "commuting", "emi")):
         return "vehicle"
     if any(p in text for p in ("learn", "learning", "study", "skill", "course", "practice", "project", "portfolio", "certification", "education")):
@@ -133,6 +145,11 @@ def domain_assumptions(domain: str, values: dict[str, float]) -> list[str]:
         if not values.get("monthly_premium_inr") or not values.get("coverage_amount_inr"):
             assumptions.append("Enter a real insurer quote and stated coverage amount before comparing cost and coverage numerically.")
         assumptions.append("Policy exclusions, waiting periods, underwriting and claim outcomes require the actual policy wording and insurer confirmation.")
+    elif domain == "home_finance":
+        required = ("loan_amount_inr", "annual_interest_rate_pct", "loan_term_years")
+        if any(values.get(key, 0.0) <= 0 for key in required):
+            assumptions.append("Mortgage payment and total interest are shown only when loan amount, annual interest rate and loan term are supplied. No market rate is assumed.")
+        assumptions.append("The mortgage estimate uses a fixed-rate monthly repayment formula and excludes taxes, insurance, fees, variable-rate changes and early repayments.")
     elif domain == "vehicle":
         missing = [key for key in ("monthly_emi_inr", "monthly_fuel_cost_inr", "monthly_maintenance_cost_inr", "annual_insurance_cost_inr") if values.get(key, 0.0) <= 0]
         if missing:
