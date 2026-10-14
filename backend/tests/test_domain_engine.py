@@ -144,3 +144,20 @@ def test_mortgage_domain_calculates_fixed_rate_payment_and_total_interest():
 
 def test_mortgage_domain_is_classified_before_generic_loan():
     assert classify_domain("What if I choose a 30 year mortgage to buy a house?") == "home_finance"
+
+
+def test_simulation_blocks_prolonged_food_restriction_scenarios():
+    """Ensure prolonged food-restriction requests do not produce simulated outcomes."""
+    response = client.post(
+        "/simulate",
+        json={
+            "decision": "What if I stop eating for 5 days?",
+            "months": 5,
+            "initial_state": {},
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["scenarios"] == []
+    assert "healthcare professional" in data["safety_notice"]
