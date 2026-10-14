@@ -177,10 +177,13 @@ def extract_decision(decision: str, months: int = 3) -> ExtractedDecision:
             )
             data: Any = json.loads(response.text)
             extracted = ExtractedDecision.model_validate(data)
-            if extracted.horizon_months == 3:
-                horizon_match = re.search(r"\b(\d{1,2})\s*(?:months?|mos?)\b", decision.lower())
-                if horizon_match:
-                    extracted.horizon_months = max(1, min(24, int(horizon_match.group(1))))
+            horizon_match = re.search(r"\b(\d{1,2})\s*(?:months?|mos?)\b", decision.lower())
+            if horizon_match:
+                # An explicit duration in the user's wording takes precedence over UI defaults.
+                extracted.horizon_months = max(1, min(24, int(horizon_match.group(1))))
+            else:
+                # If the user did not state a duration, preserve the duration selected in the UI.
+                extracted.horizon_months = max(1, min(24, months))
             # Preserve clear amounts/horizon if the model omitted them.
             local = _fallback_extract(decision, months)
             for key, value in local.variables.items():
