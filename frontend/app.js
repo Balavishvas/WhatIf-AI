@@ -73,6 +73,7 @@
   }
   function decisionDomain(decision) {
     const text = String(decision || "").toLowerCase();
+    if (/mortgage|home loan|house loan|buy a house|buy a home|home purchase|purchase a home|buying a home|buying a house/.test(text)) return "home_finance";
     if (/life insurance|term insurance|life cover/.test(text)) return "life_insurance";
     if (/health insurance|medical insurance|mediclaim|hospitalization/.test(text)) return "health_insurance";
     if (/insurance|policy premium|sum insured|deductible|co-pay|copay/.test(text)) return "insurance";
@@ -91,6 +92,7 @@
     ],
     learning: [["study_hours_per_week","Study hours per week","6"],["learning_cost_inr","Learning budget (INR)",""],["projects_completed","Current project milestones","0"],["skills_practiced","Current skills practiced","0"]],
     education_career: [["education_cost_inr","Total education cost (INR)",""],["monthly_take_home_inr","Monthly take-home pay (INR)",""],["study_hours_per_week","Current study hours / week",""],["work_experience_months","Current work experience (months)","0"]],
+    home_finance: [["home_price_inr","Home price (INR)",""],["down_payment_inr","Down payment (INR)",""],["loan_amount_inr","Loan amount (INR)",""],["annual_interest_rate_pct","Annual interest rate (%)",""],["loan_term_years","Loan term (years)",""]],
     vehicle: [["vehicle_purchase_price_inr","Vehicle price (INR)",""],["down_payment_inr","Down payment (INR)",""],["monthly_emi_inr","Monthly EMI (INR)",""],["monthly_fuel_cost_inr","Monthly fuel (INR)",""],["monthly_maintenance_cost_inr","Monthly maintenance (INR)",""],["annual_insurance_cost_inr","Annual insurance (INR)",""]],
     life_insurance: [["monthly_premium_inr","Monthly premium (INR)",""],["coverage_amount_inr","Coverage amount (INR)",""],["monthly_income_inr","Monthly income (INR)",""]],
     health_insurance: [["monthly_premium_inr","Monthly premium (INR)",""],["coverage_amount_inr","Sum insured (INR)",""],["deductible_inr","Deductible (INR)",""],["copay_pct","Co-pay (%)",""],["monthly_income_inr","Monthly income (INR)",""]],
@@ -118,7 +120,7 @@
       if (previous[key] !== undefined) input.value = previous[key];
       wrapper.append(caption, input); container.appendChild(wrapper);
     });
-    $("domainInputHint").textContent = "Inputs tailored to " + ({stock_learning:"stock-market learning",education_career:"education vs career",vehicle:"vehicle ownership",life_insurance:"life insurance",health_insurance:"health insurance",insurance:"insurance",learning:"learning",business:"business planning",personal_finance:"personal finance",health_habit:"habits",general:"your decision"}[domain] || domain) + ". Leave unknown values blank.";
+    $("domainInputHint").textContent = "Inputs tailored to " + ({stock_learning:"stock-market learning",education_career:"education vs career",vehicle:"vehicle ownership",home_finance:"home purchase and mortgage",life_insurance:"life insurance",health_insurance:"health insurance",insurance:"insurance",learning:"learning",business:"business planning",personal_finance:"personal finance",health_habit:"habits",general:"your decision"}[domain] || domain) + ". Leave unknown values blank.";
   }
   renderDomainInputs();
   decisionInput.addEventListener("input", () => renderDomainInputs());
@@ -247,11 +249,30 @@
     scenarios.forEach((scenario, index) => {
       const final = finalValues(scenario);
       const start = startValues(scenario);
-      const keys = Object.keys(final).slice(0, 2);
+      const preferredByDomain = {
+        home_finance: ["monthly_mortgage_payment_inr", "total_interest_paid_inr", "loan_amount_inr", "down_payment_inr"],
+        vehicle: ["monthly_ownership_cost_inr", "cumulative_ownership_cost_inr", "monthly_emi_inr", "monthly_fuel_cost_inr"],
+        life_insurance: ["monthly_premium_inr", "coverage_amount_inr", "annual_premium_inr"],
+        health_insurance: ["monthly_premium_inr", "coverage_amount_inr", "deductible_inr", "copay_pct"],
+        insurance: ["monthly_premium_inr", "coverage_amount_inr", "annual_premium_inr"],
+        stock_learning: ["study_hours_per_week", "paper_trading_sessions", "strategies_tested", "concepts_practiced", "learning_cost_inr"],
+        education_career: ["cumulative_education_cost_inr", "cumulative_earnings_inr", "study_hours_per_week", "work_experience_months"],
+        personal_finance: ["monthly_income_inr", "monthly_expenses_inr", "monthly_surplus_inr", "savings_inr"],
+        business: ["monthly_net_cashflow", "revenue", "customers", "cost", "cash_on_hand"],
+        health_habit: ["habit_days_per_week", "habit_sessions_completed", "habit_cost_inr"],
+        learning: ["study_hours_per_week", "projects_completed", "skills_practiced", "learning_cost_inr"],
+        general: ["revenue", "customers", "cost"]
+      };
+      const domain = data.domain || decisionDomain(data.decision);
+      const preferred = preferredByDomain[domain] || preferredByDomain.general;
+      const keys = preferred.filter((key) => Object.prototype.hasOwnProperty.call(final, key) && number(final[key]) !== null && (number(final[key]) !== 0 || number(start[key]) !== 0)).slice(0, 2);
       const stats = keys.map((key) => {
         const baseline = start[key];
         const delta = number(final[key]) !== null && number(baseline) !== null ? final[key] - baseline : null;
-        return '<div><span class="stat-label">' + escape(metricName(key)) + '</span><span class="stat-value">' + escape(compact(final[key])) + '</span><span class="stat-delta">' + (delta === null ? "No numeric baseline" : escape((delta > 0 ? "+" : "") + format(delta) + " over horizon")) + '</span></div>';
+        const money = /inr/.test(key);
+        const shown = (money ? "₹" : "") + compact(final[key]);
+        const changed = delta !== null && Math.abs(delta) > 0.000001;
+        return '<div><span class="stat-label">' + escape(metricName(key)) + '</span><span class="stat-value">' + escape(shown) + '</span><span class="stat-delta">' + (changed ? escape((delta > 0 ? "+" : "") + (money ? "₹" : "") + compact(delta) + " modeled change") : "Held constant in this scenario") + '</span></div>';
       }).join("");
       const timelineRows = (scenario.timeline || []).map((snapshot) => {
         const values = Object.entries(snapshot.values || {}).slice(0, 3).map(([key, value]) => escape(metricName(key)) + ": " + escape(format(value))).join(" · ");
@@ -307,6 +328,7 @@
       stock_learning: ["study_hours_per_week", "paper_trading_sessions", "strategies_tested", "concepts_practiced", "learning_cost_inr", "learning_budget_inr"],
       learning: ["study_hours_per_week", "projects_completed", "skills_practiced", "learning_cost_inr"],
       education_career: ["cumulative_education_cost_inr", "cumulative_earnings_inr", "study_hours_per_week", "work_experience_months"],
+      home_finance: ["monthly_mortgage_payment_inr", "total_interest_paid_inr", "loan_amount_inr", "down_payment_inr"],
       vehicle: ["monthly_ownership_cost_inr", "cumulative_ownership_cost_inr", "monthly_emi_inr", "monthly_fuel_cost_inr"],
       life_insurance: ["monthly_premium_inr", "coverage_amount_inr", "annual_premium_inr", "cumulative_premium_paid_inr", "premium_share_of_income_pct"],
       health_insurance: ["monthly_premium_inr", "coverage_amount_inr", "annual_premium_inr", "cumulative_premium_paid_inr", "deductible_inr", "copay_pct"],
