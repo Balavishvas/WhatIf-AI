@@ -55,7 +55,46 @@
   const compact = (value) => number(value) === null ? "—" : new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(value);
   const title = (value) => String(value || "Scenario").replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
   const escape = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
-  const metricName = (value) => title(value);
+  const metricLabels = {
+    monthly_mortgage_payment_inr: "Estimated monthly mortgage",
+    total_interest_paid_inr: "Total loan interest",
+    loan_amount_inr: "Mortgage amount",
+    home_price_inr: "Home price",
+    down_payment_inr: "Down payment",
+    annual_interest_rate_pct: "Annual interest rate",
+    loan_term_years: "Loan term",
+    monthly_ownership_cost_inr: "Monthly ownership cost",
+    cumulative_ownership_cost_inr: "Total ownership cost",
+    monthly_emi_inr: "Monthly EMI",
+    monthly_fuel_cost_inr: "Monthly fuel",
+    monthly_premium_inr: "Monthly premium",
+    coverage_amount_inr: "Coverage amount",
+    annual_premium_inr: "Annual premium",
+    premium_share_of_income_pct: "Share of income",
+    paper_trading_sessions: "Paper-trading sessions",
+    strategies_tested: "Strategies tested",
+    concepts_practiced: "Concepts practiced",
+    study_hours_per_week: "Study hours per week",
+    learning_cost_inr: "Learning spend",
+    cumulative_education_cost_inr: "Education cost to date",
+    cumulative_earnings_inr: "Earnings to date",
+    work_experience_months: "Work experience",
+    monthly_income_inr: "Monthly income",
+    monthly_expenses_inr: "Monthly expenses",
+    monthly_surplus_inr: "Monthly surplus",
+    savings_inr: "Savings",
+    monthly_net_cashflow: "Monthly net cash flow",
+    cash_on_hand: "Cash on hand",
+    revenue: "Monthly revenue",
+    customers: "Customers",
+    cost: "Monthly costs",
+    projects_completed: "Project milestones",
+    skills_practiced: "Skills practiced",
+    habit_days_per_week: "Habit days per week",
+    habit_sessions_completed: "Habit sessions completed",
+    habit_cost_inr: "Habit-related cost"
+  };
+  const metricName = (value) => metricLabels[value] || title(value);
   function branchTag(value) {
     const text = String(value || "").toLowerCase();
     if (/continue|current|maintain|baseline|keep/.test(text)) return "BASELINE";
