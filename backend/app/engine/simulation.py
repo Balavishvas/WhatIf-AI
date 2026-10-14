@@ -358,4 +358,5 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
 
 
 def run_simulation(initial_state: dict[str, float], branches: list[str], months: int, decision: str = "") -> list[Scenario]:
+    """Run the simulation for each branch and return the resulting scenarios."""
     return [simulate(initial_state, branch, months, decision) for branch in branches]
