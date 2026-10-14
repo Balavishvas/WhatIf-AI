@@ -88,6 +88,28 @@ def _fallback_extract(decision: str, months: int) -> ExtractedDecision:
                 assumptions.append("The amount mentioned was not assigned to a premium or coverage field because its meaning is ambiguous.")
         assumptions.append("Use actual insurer quotes and policy wording; no premiums, coverage eligibility or claim outcomes are invented.")
         return ExtractedDecision(goal="Compare insurance options", action=decision.strip(), horizon_months=horizon, variables=variables, constraints=[], assumptions=assumptions)
+    if domain == "home_finance":
+        variables = {
+            "home_price_inr": 0.0, "down_payment_inr": 0.0, "loan_amount_inr": 0.0,
+            "annual_interest_rate_pct": 0.0, "loan_term_years": 0.0,
+        }
+        rate_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:%|percent)", text)
+        term_match = re.search(r"\b(\d{1,2})\s*[- ]?year", text)
+        if rate_match:
+            variables["annual_interest_rate_pct"] = float(rate_match.group(1))
+        if term_match:
+            variables["loan_term_years"] = float(term_match.group(1))
+        if amount is not None:
+            if any(word in text for word in ("down payment", "downpayment", "deposit")):
+                variables["down_payment_inr"] = amount
+            elif any(word in text for word in ("loan amount", "mortgage amount", "borrow")):
+                variables["loan_amount_inr"] = amount
+            elif any(word in text for word in ("home price", "house price", "property price", "home costs", "house costs")):
+                variables["home_price_inr"] = amount
+            else:
+                assumptions.append("The stated amount was not assigned to a home-price, down-payment or loan field because its meaning is ambiguous.")
+        assumptions.append("Mortgage payment estimates require a known loan amount or home price/down payment, annual interest rate and term.")
+        return ExtractedDecision(goal="Compare home-purchase financing paths", action=decision.strip(), horizon_months=horizon, variables=variables, constraints=[], assumptions=assumptions)
     if domain == "vehicle":
         variables = {"vehicle_purchase_price_inr": 0.0, "down_payment_inr": 0.0, "monthly_emi_inr": 0.0, "monthly_fuel_cost_inr": 0.0, "monthly_maintenance_cost_inr": 0.0, "annual_insurance_cost_inr": 0.0}
         if amount is not None:
