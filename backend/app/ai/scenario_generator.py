@@ -47,6 +47,13 @@ def _fallback_branches(decision: str) -> list[str]:
             "Compare deductibles, exclusions, and claim conditions before choosing",
             "Wait and compare multiple policy terms before committing",
         ]
+    if any(word in text for word in ("mortgage", "home loan", "house loan", "buy a house", "buy a home", "home purchase", "purchase a home", "buying a home", "buying a house")):
+        return [
+            "Buy with a 10-year mortgage: higher monthly payments, less total interest",
+            "Choose a 30-year mortgage: lower required monthly payments, more total interest",
+            "Choose a 15-year mortgage: balance monthly affordability and total interest",
+            "Delay buying and save a larger down payment before taking a mortgage",
+        ]
     if any(word in text for word in ("bike", "motorcycle", "scooter", "car", "vehicle", "600 cc", "600cc", "emi", "fuel", "commuting")):
         return [
             "Buy now and budget for full ownership costs",
