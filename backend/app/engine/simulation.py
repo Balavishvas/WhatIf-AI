@@ -142,6 +142,7 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
                 monthly_payment = loan * monthly_rate * factor / (factor - 1)
             total_interest = max(0.0, monthly_payment * n - loan)
         state.values["loan_amount_inr"] = loan
+        state.values["loan_term_years"] = years
         state.values["monthly_mortgage_payment_inr"] = round(monthly_payment, 2) if loan > 0 and years > 0 else 0.0
         state.values["total_interest_paid_inr"] = round(total_interest, 2) if loan > 0 and years > 0 else 0.0
         state.values["down_payment_inr"] = down
