@@ -122,3 +122,25 @@ def test_stock_learning_budget_caps_cumulative_planned_spend():
     final = scenarios[0].timeline[-1].values
     assert final["learning_cost_inr"] == 1000
     assert final["learning_budget_inr"] == 0
+
+
+
+def test_mortgage_domain_calculates_fixed_rate_payment_and_total_interest():
+    scenarios = run_simulation(
+        initial_state={
+            "loan_amount_inr": 3000000,
+            "annual_interest_rate_pct": 8.5,
+            "loan_term_years": 20,
+        },
+        branches=["Choose a 20-year mortgage"],
+        months=12,
+        decision="What if I buy a home with a mortgage?",
+    )
+    final = scenarios[0].timeline[-1].values
+    assert 25000 < final["monthly_mortgage_payment_inr"] < 27000
+    assert final["total_interest_paid_inr"] > 0
+    assert "revenue" not in final
+
+
+def test_mortgage_domain_is_classified_before_generic_loan():
+    assert classify_domain("What if I choose a 30 year mortgage to buy a house?") == "home_finance"
