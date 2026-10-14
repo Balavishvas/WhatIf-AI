@@ -24,6 +24,33 @@ class ExtractedDecision(BaseModel):
     assumptions: list[str] = Field(default_factory=list)
 
 
+
+
+_NUMBER_WORDS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14,
+    "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18,
+    "nineteen": 19, "twenty": 20, "twenty-one": 21, "twenty one": 21,
+    "twenty-two": 22, "twenty two": 22, "twenty-three": 23,
+    "twenty three": 23, "twenty-four": 24, "twenty four": 24,
+}
+
+
+def _parse_horizon_months(text: str) -> int | None:
+    """Parse numeric or spelled-out month durations, bounded to the supported horizon."""
+    match = re.search(
+        r"\\b(\\d{1,2}|twenty[- ]four|twenty[- ]three|twenty[- ]two|twenty[- ]one|"
+        r"twenty|nineteen|eighteen|seventeen|sixteen|fifteen|fourteen|thirteen|"
+        r"twelve|eleven|ten|nine|eight|seven|six|five|four|three|two|one)\\s*(?:months?|mos?)\\b",
+        text.lower(),
+    )
+    if not match:
+        return None
+    token = match.group(1)
+    value = int(token) if token.isdigit() else _NUMBER_WORDS[token]
+    return max(1, min(24, value))
+
 SYSTEM_PROMPT = """You are the decision extraction layer for WhatIf AI.
 Convert a natural-language decision into structured JSON for a scenario simulation.
 Do not predict the user's future. Extract only what the user said and reasonable
