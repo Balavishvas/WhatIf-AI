@@ -84,3 +84,55 @@ def test_falls_back_to_local_rules_when_gemini_fails(monkeypatch):
     assert len(branches) >= 3
     assert any("marketing" in branch for branch in branches)
     assert "Gemini unavailable" in source
+
+
+def test_gemini_extraction_preserves_selected_horizon_when_decision_has_no_duration(monkeypatch):
+    import json
+    import sys
+    from types import SimpleNamespace
+
+    from app.ai import decision_extractor
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    payload = {
+        "goal": "Learn AI",
+        "action": "Learn AI",
+        "horizon_months": 3,
+        "variables": {},
+        "constraints": [],
+        "assumptions": [],
+    }
+    fake_response = SimpleNamespace(text=json.dumps(payload))
+    fake_client = SimpleNamespace(models=SimpleNamespace(generate_content=lambda **kwargs: fake_response))
+    fake_genai = SimpleNamespace(Client=lambda **kwargs: fake_client)
+    monkeypatch.setitem(sys.modules, "google", SimpleNamespace(genai=fake_genai))
+
+    extracted = decision_extractor.extract_decision("What if I learn AI?", months=12)
+
+    assert extracted.horizon_months == 12
+
+
+def test_explicit_decision_duration_overrides_selected_horizon(monkeypatch):
+    import json
+    import sys
+    from types import SimpleNamespace
+
+    from app.ai import decision_extractor
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    payload = {
+        "goal": "Learn AI",
+        "action": "Learn AI for six months",
+        "horizon_months": 3,
+        "variables": {},
+        "constraints": [],
+        "assumptions": [],
+    }
+    fake_response = SimpleNamespace(text=json.dumps(payload))
+    fake_client = SimpleNamespace(models=SimpleNamespace(generate_content=lambda **kwargs: fake_response))
+    fake_genai = SimpleNamespace(Client=lambda **kwargs: fake_client)
+    monkeypatch.setitem(sys.modules, "google", SimpleNamespace(genai=fake_genai))
+
+    extracted = decision_extractor.extract_decision("What if I learn AI for 6 months?", months=12)
+
+    assert extracted.horizon_months == 6
