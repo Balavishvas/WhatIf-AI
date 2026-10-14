@@ -122,7 +122,7 @@ def _generate_with_gemini(decision: str, api_key: str) -> list[str] | None:
 Generate 3 to 5 distinct, practical scenario paths for this decision.
 First identify its main domain and tailor paths to that domain. Do not use generic
 business/finance paths for a personal, vehicle, health, insurance, career, or education
-question. For vehicle decisions consider purchase timing, financing, running costs,
+question. For home purchase or mortgage decisions, compare loan terms such as 10, 15 and 30 years only as alternatives, explaining monthly-payment versus total-interest trade-offs; include delaying purchase as an option. Do not invent interest rates, loan amounts, monthly payments or savings. For vehicle decisions consider purchase timing, financing, running costs,
 maintenance, insurance, and use patterns where relevant. For life/health insurance,
 consider coverage needs, affordability, policy duration, exclusions, deductibles or
 waiting periods where relevant. Do not claim to give individualized medical, legal,
