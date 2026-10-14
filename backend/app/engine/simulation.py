@@ -122,6 +122,13 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
         loan = max(0.0, state.values["loan_amount_inr"] or (price - down if price > 0 else 0.0))
         rate_pct = max(0.0, state.values["annual_interest_rate_pct"])
         years = max(0.0, state.values["loan_term_years"])
+        branch_text = branch.lower()
+        branch_term = __import__("re").search(r"\b(10|15|20|25|30)\s*[- ]?year", branch_text)
+        if branch_term:
+            years = float(branch_term.group(1))
+        delayed_purchase = any(word in branch_text for word in ("delay buying", "delay the home", "save a larger down payment", "postpone the purchase"))
+        if delayed_purchase:
+            loan = 0.0
         monthly_payment = 0.0
         total_interest = 0.0
         if loan > 0 and years > 0:
