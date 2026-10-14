@@ -155,11 +155,19 @@ def _fallback_extract(decision: str, months: int) -> ExtractedDecision:
     if domain == "personal_finance":
         variables = {"monthly_income_inr": 0.0, "monthly_expenses_inr": 0.0, "savings_inr": 0.0}
         assumptions.append("Provide monthly income, expenses and current savings for a numeric budget simulation.")
-        return ExtractedDecision(goal="Explore personal-finance trade-offs", action=decision.strip(), horizon_months=horizon, variables=variables, constraints=[], assumptions=assumptions)
+    if domain == "humor_absurd":
+        variables = {"survival_odds_pct": 50.0, "regret_index": 80.0, "flex_score": 60.0}
+        assumptions.append("Caution: Darwin Awards criteria may apply to this scenario.")
+        assumptions.append("Organ commerce and biologically hazardous decisions carry a 100% regret expectancy.")
+        return ExtractedDecision(goal="Simulate absurd or humorous hypothetical", action=decision.strip(), horizon_months=horizon, variables=variables, constraints=[], assumptions=assumptions)
 
-    is_learning = any(word in text for word in (
-        "learn", "learning", "study", "skill", "practice", "course", "knowledge", "ai", "project", "portfolio"
-    ))
+    is_learning = domain in ("learning", "stock_learning") or (
+        domain == "general"
+        and any(
+            word in text
+            for word in ("learn", "learning", "study", "skill", "practice", "course", "knowledge", "certification")
+        )
+    )
     if is_learning:
         if amount is not None:
             variables["learning_budget_inr"] = amount

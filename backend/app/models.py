@@ -21,6 +21,9 @@ class Scenario(BaseModel):
     name: str
     assumption: str
     timeline: list[StateSnapshot]
+    tag: str = "ALTERNATIVE"
+    considerations: list[str] = Field(default_factory=list)
+    wildcards: list[str] = Field(default_factory=list)
 
 
 class SimulationResponse(BaseModel):

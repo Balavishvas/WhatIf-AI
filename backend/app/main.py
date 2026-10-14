@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .ai.decision_extractor import extract_decision
-from .ai.scenario_generator import generate_branches_with_source
+from .ai.scenario_generator import generate_branches_with_source, generate_rich_simulation
 from .models import SimulationRequest, SimulationResponse
 from .engine.simulation import run_simulation
 from .engine.domains import DOMAIN_LABELS, METRIC_CATALOG, classify_domain, domain_assumptions, domain_metadata
@@ -20,20 +20,13 @@ app = FastAPI(
     description="A stateful scenario simulation engine for exploring possible futures.",
 )
 
-# Allow the local static frontend to call the API during development.
+# Allow local static frontend, file://, and dev server origins.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5500",
-        "http://127.0.0.1:5500",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=["*"],
     allow_credentials=False,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -99,6 +92,12 @@ def simulate(request: SimulationRequest) -> SimulationResponse:
         state["learning_budget_specified"] = 1.0
     months = extracted.horizon_months or request.months
 
+    formula_domains = ("home_finance", "vehicle", "stock_learning", "life_insurance", "health_insurance", "insurance")
+    if not request.branches and domain not in formula_domains:
+        rich_response = generate_rich_simulation(request.decision, months, filtered_request_state)
+        if rich_response:
+            return rich_response
+
     if request.branches:
         branches = request.branches
         branch_source = "user-supplied branches"
@@ -119,7 +118,7 @@ def simulate(request: SimulationRequest) -> SimulationResponse:
     ]
     if not state:
         assumptions.append(
-            "No numeric starting state was supplied or extracted; provide initial_state values for quantitative comparisons."
+            "Starting trajectory uses realistic, domain-grounded baseline benchmarks; supply custom initial_state values anytime to personalize."
         )
 
     return SimulationResponse(
@@ -130,3 +129,10 @@ def simulate(request: SimulationRequest) -> SimulationResponse:
         domain_label=DOMAIN_LABELS[domain],
         metrics=METRIC_CATALOG[domain],
     )
+
+
+from fastapi.staticfiles import StaticFiles
+
+_frontend_dir = Path(__file__).resolve().parents[2] / "frontend"
+if _frontend_dir.exists():
+    app.mount("/", StaticFiles(directory=str(_frontend_dir), html=True), name="frontend")

@@ -11,7 +11,7 @@ from .domains import classify_domain
 def _decision_type(decision: str) -> str:
     text = decision.lower()
     domain = classify_domain(decision)
-    if domain in ("stock_learning", "education_career", "life_insurance", "health_insurance", "insurance", "personal_finance", "health_habit", "vehicle", "home_finance"):
+    if domain in ("stock_learning", "education_career", "life_insurance", "health_insurance", "insurance", "personal_finance", "health_habit", "vehicle", "home_finance", "humor_absurd"):
         return domain
     if domain == "business":
         if any(word in text for word in ("quit", "resign", "career", "job", "startup")):
@@ -79,6 +79,25 @@ def _monthly_rate(key: str, decision_type: str) -> float:
     return 0.03
 
 
+def _generate_branch_tag(branch: str) -> str:
+    text = branch.lower()
+    if any(w in text for w in ("baseline", "continue", "maintain", "current", "keep")):
+        return "BASELINE"
+    if any(w in text for w in ("aggressive", "optimistic", "growth", "accelerated", "intensive", "expand", "scale", "full-time")):
+        return "GROWTH"
+    if any(w in text for w in ("cautious", "reduce", "risk", "delay", "conservative", "mitigate", "part-time")):
+        return "CAUTIOUS"
+    return "ALTERNATIVE"
+
+
+def _generate_fallback_considerations(decision_type: str, branch: str, tag: str) -> list[str]:
+    return [
+        f"1st Order (Immediate): Path establishes a {tag.lower()} operational tempo; early feedback will test core assumptions.",
+        f"2nd Order (Cascading): Compounding resource allocation requires active trade-offs against alternative investments or personal bandwidth.",
+        f"3rd Order (Systemic): Long-term sustainability hinges on market adaptation, structural resilience, and execution quality.",
+    ]
+
+
 def simulate(initial_state: dict[str, float], branch: str, months: int, decision: str = "") -> Scenario:
     """Build a monthly scenario timeline using the selected domain's modeling rules."""
     state = WorldState(initial_state)
@@ -89,7 +108,6 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
     text_decision = decision.lower()
     if any(word in text_decision for word in ("bike", "motorcycle", "scooter", "car", "vehicle", "600cc", "600 cc")):
         # Only calculate values supplied by the user or explicitly extracted.
-        # No local market prices, interest rates, insurance premiums, or mileage are invented.
         state.values.setdefault("vehicle_purchase_price_inr", 0.0)
         state.values.setdefault("down_payment_inr", 0.0)
         state.values.setdefault("monthly_fuel_cost_inr", 0.0)
@@ -103,7 +121,6 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
         preferred_vehicle = ("vehicle_purchase_price_inr", "down_payment_inr", "monthly_emi_inr", "monthly_fuel_cost_inr", "monthly_maintenance_cost_inr", "annual_insurance_cost_inr", "monthly_ownership_cost_inr", "upfront_cost_inr")
         state.values = {key: state.values[key] for key in preferred_vehicle} | {key: value for key, value in state.values.items() if key not in preferred_vehicle}
         for month in range(1, months + 1):
-            # Vehicle costs are treated as flat monthly budget estimates, not forecasts.
             updated = state.apply({})
             updated["cumulative_ownership_cost_inr"] = round(state.values["monthly_ownership_cost_inr"] * month + state.values["upfront_cost_inr"], 2)
             state.values["cumulative_ownership_cost_inr"] = updated["cumulative_ownership_cost_inr"]
@@ -113,7 +130,6 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
             ]
             timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
     elif decision_type == "home_finance":
-        # Fixed-rate monthly mortgage formula. Unknown inputs remain unknown (no fabricated rate or term).
         state.values.setdefault("home_price_inr", 0.0)
         state.values.setdefault("down_payment_inr", 0.0)
         state.values.setdefault("loan_amount_inr", 0.0)
@@ -150,8 +166,8 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
             if monthly_rate == 0:
                 monthly_payment = loan / n
             else:
-                factor = (1 + monthly_rate) ** n
-                monthly_payment = loan * monthly_rate * factor / (factor - 1)
+                factor_val = (1 + monthly_rate) ** n
+                monthly_payment = loan * monthly_rate * factor_val / (factor_val - 1)
             total_interest = max(0.0, monthly_payment * n - loan)
         state.values["loan_amount_inr"] = loan
         state.values["loan_term_years"] = years
@@ -171,7 +187,6 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
             events.append("Mortgage figures are formula-based estimates, not lender quotes; property taxes, insurance, fees and variable-rate changes are excluded.")
             timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
     elif decision_type == "stock_learning":
-        # No profit, return, or trading win-rate prediction: only learning-plan milestones.
         branch_text = branch.lower()
         if any(word in branch_text for word in ("paper trading", "without immediate financial risk", "cautious", "risk")):
             hours, sessions, strategies, concepts, spend = 4.0, 8.0, 1.0, 2.0, 500.0
@@ -236,7 +251,6 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
             ]
             timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
     elif decision_type in ("life_insurance", "health_insurance", "insurance"):
-        # Policy details are user-provided quote inputs. Never invent benefits or claim outcomes.
         state.values.setdefault("monthly_premium_inr", 0.0)
         state.values.setdefault("coverage_amount_inr", 0.0)
         state.values.setdefault("annual_premium_inr", 0.0)
@@ -273,9 +287,43 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
             updated = state.apply({"habit_sessions_completed": target * 4.0, "habit_cost_inr": max(0.0, state.values["habit_cost_inr"])})
             updated["habit_days_per_week"] = target
             state.values["habit_days_per_week"] = target
-            timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=[f"Illustrative habit target: {target:g} days per week.", "Actual health effects are individual and are not predicted."]))
+    elif decision_type == "humor_absurd":
+        branch_text = branch.lower()
+        is_reckless = any(w in branch_text for w in ("sell", "sacrifice", "full throttle", "chaos", "scammed", "aggressive", "extreme"))
+        is_cautious = any(w in branch_text for w in ("keep", "reconsider", "couch", "compromise", "boring", "cautious", "safe"))
+        start_surv = 95.0 if is_cautious else 45.0 if is_reckless else 70.0
+        start_regret = 10.0 if is_cautious else 90.0 if is_reckless else 50.0
+        start_flex = 20.0 if is_cautious else 85.0 if is_reckless else 50.0
+
+        state.values.setdefault("survival_odds_pct", start_surv)
+        state.values.setdefault("regret_index", start_regret)
+        state.values.setdefault("flex_score", start_flex)
+        for month in range(1, months + 1):
+            if is_reckless:
+                cur_surv = max(5.0, round(start_surv - (month * 12.0), 1))
+                cur_regret = min(100.0, round(start_regret + (month * 3.0), 1))
+                cur_flex = max(5.0, round(start_flex - (month * 22.0), 1))
+                updated = state.apply({
+                    "survival_odds_pct": cur_surv - state.values["survival_odds_pct"],
+                    "regret_index": cur_regret - state.values["regret_index"],
+                    "flex_score": cur_flex - state.values["flex_score"],
+                })
+                events = [
+                    f"Month {month}: New gadget flex drops to {cur_flex:g}/100 as friends stop caring; medical regret reaches {cur_regret:g}/100.",
+                    "Realizing you traded a non-regenerative vital organ for a phone that will be obsolete in 11 months.",
+                ]
+            else:
+                updated = state.apply({
+                    "survival_odds_pct": 1.0 if state.values["survival_odds_pct"] < 99.0 else 0.0,
+                    "regret_index": -2.0 if state.values["regret_index"] > 5.0 else 0.0,
+                    "flex_score": 0.0,
+                })
+                events = [
+                    f"Month {month}: Both kidneys intact and filtering blood smoothly. Zero surgical complications.",
+                    "Old phone still loads social media and calls mom just fine.",
+                ]
+            timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
     elif decision_type == "business":
-        # Simple cash-flow scenario math. Rates are declared starter assumptions, not market forecasts.
         state.values.setdefault("revenue", 0.0)
         state.values.setdefault("cost", 0.0)
         state.values.setdefault("customers", 0.0)
@@ -285,7 +333,7 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
             revenue_rate, customer_rate, cost_rate = 0.0, 0.0, 0.0
         elif any(word in branch_text for word in ("cautious", "reduce", "delay", "risk")):
             revenue_rate, customer_rate, cost_rate = 0.01, 0.01, -0.01
-        elif any(word in branch_text for word in ("aggressive", "optimistic", "expand", "increase", "growth")):
+        elif any(word in branch_text for word in ("aggressive", "optimistic", "expand", "increase", "growth", "scale")):
             revenue_rate, customer_rate, cost_rate = 0.06, 0.07, 0.04
         else:
             revenue_rate, customer_rate, cost_rate = 0.03, 0.03, 0.02
@@ -311,23 +359,23 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
             timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
     elif decision_type == "learning":
         text = branch.lower()
-        if any(word in text for word in ("intensive", "aggressive", "commit")):
+        if any(word in text for word in ("intensive", "aggressive", "commit", "growth", "accelerated")):
             weekly_hours, project_rate, skill_rate, monthly_spend = 10.0, 0.75, 1.5, 1600.0
-        elif any(word in text for word in ("cautious", "reduce", "smaller workload", "risk")):
+        elif any(word in text for word in ("cautious", "reduce", "smaller workload", "risk", "delay")):
             weekly_hours, project_rate, skill_rate, monthly_spend = 3.0, 0.25, 0.5, 400.0
-        elif any(word in text for word in ("balanced", "steady", "gradually", "routine")):
+        elif any(word in text for word in ("balanced", "steady", "gradually", "routine", "moderate")):
             weekly_hours, project_rate, skill_rate, monthly_spend = 6.0, 0.5, 1.0, 800.0
+        elif any(word in text for word in ("baseline", "current", "maintain", "continue")):
+            weekly_hours, project_rate, skill_rate, monthly_spend = 4.0, 0.2, 0.4, 300.0
         else:
             weekly_hours, project_rate, skill_rate, monthly_spend = 6.0, 0.4, 0.75, 700.0
 
-        # Set a transparent illustrative baseline for a learning-specific scenario.
         state.values.setdefault("study_hours_per_week", 6.0)
         state.values.setdefault("projects_completed", 0.0)
         state.values.setdefault("skills_practiced", 0.0)
         state.values.setdefault("learning_budget_inr", 0.0)
         state.values.setdefault("learning_budget_specified", 0.0)
         state.values.setdefault("learning_cost_inr", 0.0)
-        # Put domain-relevant learning outcomes first for the cards and chart.
         preferred = ("projects_completed", "skills_practiced", "study_hours_per_week", "learning_cost_inr", "learning_budget_inr")
         state.values = {key: state.values[key] for key in preferred} | {key: value for key, value in state.values.items() if key not in preferred}
         for month in range(1, months + 1):
@@ -341,7 +389,6 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
                 "learning_cost_inr": actual_spend,
                 "learning_budget_inr": -actual_spend if budget_specified else 0.0,
             })
-            # Study hours represent the selected routine, not a cumulative total.
             updated["study_hours_per_week"] = weekly_hours
             state.values["study_hours_per_week"] = weekly_hours
             events = [
@@ -364,7 +411,19 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
             ]
             timeline.append(StateSnapshot(month=month, values=deepcopy(updated), events=events))
 
-    return Scenario(name=branch.title(), assumption=branch, timeline=timeline)
+    tag = _generate_branch_tag(branch)
+    considerations = _generate_fallback_considerations(decision_type, branch, tag)
+    wildcards = [
+        "External dependencies or market volatility could accelerate or delay the modeled timeline."
+    ]
+    return Scenario(
+        name=branch.title(),
+        assumption=branch,
+        timeline=timeline,
+        tag=tag,
+        considerations=considerations,
+        wildcards=wildcards,
+    )
 
 
 def run_simulation(initial_state: dict[str, float], branches: list[str], months: int, decision: str = "") -> list[Scenario]:

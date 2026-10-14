@@ -97,12 +97,22 @@
     habit_sessions_completed: "Habit sessions completed",
     habit_cost_inr: "Habit-related cost"
   };
+  function registerMetrics(metrics) {
+    if (Array.isArray(metrics)) {
+      metrics.forEach((m) => {
+        if (m && m.key && m.label) {
+          metricLabels[m.key] = m.label;
+        }
+      });
+    }
+  }
   const metricName = (value) => metricLabels[value] || title(value);
-  function branchTag(value) {
+  function branchTag(value, scenario) {
+    if (scenario && scenario.tag) return String(scenario.tag).toUpperCase();
     const text = String(value || "").toLowerCase();
     if (/continue|current|maintain|baseline|keep/.test(text)) return "BASELINE";
     if (/risk|cautious|delay|reduce|avoid|conservative|pessimistic/.test(text)) return "CAUTIOUS";
-    if (/optimistic|aggressive|increase|growth|expand|focus|intensive/.test(text)) return "GROWTH";
+    if (/optimistic|aggressive|increase|growth|expand|focus|intensive|accelerated/.test(text)) return "GROWTH";
     return "ALTERNATIVE";
   }
   function finalValues(scenario) {
@@ -115,6 +125,7 @@
   }
   function decisionDomain(decision) {
     const text = String(decision || "").toLowerCase();
+    if (/kidney|kideney|sell organ|sell my organ|fight 100|fight a bear|fight a kangaroo|marry chatgpt|marry my robot|zombie|alien invasion|rob a bank|become a pirate|eat 100|only instant noodles|fake my death|sleep for 10 years/.test(text)) return "humor_absurd";
     if (/mortgage|home loan|house loan|buy a house|buy a home|home purchase|purchase a home|buying a home|buying a house/.test(text)) return "home_finance";
     if (/life insurance|term insurance|life cover/.test(text)) return "life_insurance";
     if (/health insurance|medical insurance|mediclaim|hospitalization/.test(text)) return "health_insurance";
@@ -122,27 +133,31 @@
     if (/stock market|stock-market|stock marketing|stock trading|day trading|paper trading|learn trading|learning trading|technical analysis/.test(text)) return "stock_learning";
     if (/join ug|undergraduate|college|degree|university|get into job|workforce|study or work|study vs job/.test(text)) return "education_career";
     if (/bike|motorcycle|scooter|car|vehicle|600 ?cc|emi|fuel|commuting/.test(text)) return "vehicle";
+    if (/automate|automation|ai replaces|ai automates|future of work|disrupt|agi\b/.test(text)) return "technology_future";
+    if (/(?:quit|leave).*job.*(?:start|build|company|startup|business|agency|venture)/.test(text)) return "business";
+    if (/business|startup|company|firm|agency|venture|saas|customer|revenue|marketing|sales|hire|employee/.test(text)) return "business";
     if (/learn|learning|study|skill|course|project|portfolio|certification|education/.test(text)) return "learning";
-    if (/business|startup|customer|revenue|marketing|sales|hire|employee/.test(text)) return "business";
     if (/income|salary|savings|saving|budget|expense|spend|debt|loan|invest/.test(text)) return "personal_finance";
     if (/eat|food|diet|exercise|workout|habit|sleep|fasting/.test(text)) return "health_habit";
     return "general";
   }
   const INPUT_CATALOG = {
+    humor_absurd: [["courage_index","Audacity / bravery level (optional)","e.g. 100"],["common_sense_pct","Remaining common sense (%)","e.g. 10"],["flex_score","Desired clout / flex level","e.g. 99"]],
     stock_learning: [
-      ["study_hours_per_week","Study hours per week","6"],["learning_budget_inr","Learning budget (INR)",""],["paper_trading_sessions","Paper-trading sessions / month",""],["strategies_tested","Strategies to test / month",""],["concepts_practiced","Concepts to practice / month",""]
+      ["study_hours_per_week","Study hours per week (optional)","e.g. 6"],["learning_budget_inr","Learning budget (optional)","e.g. 5,000"],["paper_trading_sessions","Paper-trading sessions / month","e.g. 8"],["strategies_tested","Strategies to test / month","e.g. 2"],["concepts_practiced","Concepts to practice / month","e.g. 3"]
     ],
-    learning: [["study_hours_per_week","Study hours per week","6"],["learning_cost_inr","Learning budget (INR)",""],["projects_completed","Current project milestones","0"],["skills_practiced","Current skills practiced","0"]],
-    education_career: [["education_cost_inr","Total education cost (INR)",""],["monthly_take_home_inr","Monthly take-home pay (INR)",""],["study_hours_per_week","Current study hours / week",""],["work_experience_months","Current work experience (months)","0"]],
-    home_finance: [["home_price_inr","Home price (INR)",""],["down_payment_inr","Down payment (INR)",""],["loan_amount_inr","Loan amount (INR)",""],["annual_interest_rate_pct","Annual interest rate (%)",""],["loan_term_years","Loan term (years)",""]],
-    vehicle: [["vehicle_purchase_price_inr","Vehicle price (INR)",""],["down_payment_inr","Down payment (INR)",""],["monthly_emi_inr","Monthly EMI (INR)",""],["monthly_fuel_cost_inr","Monthly fuel (INR)",""],["monthly_maintenance_cost_inr","Monthly maintenance (INR)",""],["annual_insurance_cost_inr","Annual insurance (INR)",""]],
-    life_insurance: [["monthly_premium_inr","Monthly premium (INR)",""],["coverage_amount_inr","Coverage amount (INR)",""],["monthly_income_inr","Monthly income (INR)",""]],
-    health_insurance: [["monthly_premium_inr","Monthly premium (INR)",""],["coverage_amount_inr","Sum insured (INR)",""],["deductible_inr","Deductible (INR)",""],["copay_pct","Co-pay (%)",""],["monthly_income_inr","Monthly income (INR)",""]],
-    insurance: [["monthly_premium_inr","Monthly premium (INR)",""],["coverage_amount_inr","Coverage amount (INR)",""],["monthly_income_inr","Monthly income (INR)",""]],
-    business: [["revenue","Monthly revenue",""],["customers","Customers",""],["cost","Monthly costs",""],["cash_on_hand","Cash on hand",""]],
-    personal_finance: [["monthly_income_inr","Monthly income (INR)",""],["monthly_expenses_inr","Monthly expenses (INR)",""],["savings_inr","Current savings (INR)",""]],
-    health_habit: [["habit_days_per_week","Planned days per week",""],["habit_sessions_completed","Sessions completed","0"],["habit_cost_inr","Habit-related cost (INR)",""]],
-    general: [["revenue","Income / revenue",""],["customers","Users / customers",""],["cost","Costs / expenses",""]]
+    learning: [["study_hours_per_week","Study hours per week (optional)","e.g. 6"],["learning_cost_inr","Learning budget (optional)","e.g. 3,000"],["projects_completed","Current milestones completed","0"],["skills_practiced","Current skills practiced","0"]],
+    education_career: [["education_cost_inr","Total education cost (optional)","e.g. 200,000"],["monthly_take_home_inr","Monthly take-home pay (optional)","e.g. 35,000"],["study_hours_per_week","Study hours / week (optional)","e.g. 10"],["work_experience_months","Current work experience (months)","0"]],
+    home_finance: [["home_price_inr","Home price (optional)","e.g. 6,000,000"],["down_payment_inr","Down payment (optional)","e.g. 1,200,000"],["loan_amount_inr","Loan amount (optional)","e.g. 4,800,000"],["annual_interest_rate_pct","Annual interest rate (%)","e.g. 8.5"],["loan_term_years","Loan term (years)","e.g. 20"]],
+    vehicle: [["vehicle_purchase_price_inr","Vehicle price (optional)","e.g. 450,000"],["down_payment_inr","Down payment (optional)","e.g. 100,000"],["monthly_emi_inr","Monthly EMI (optional)","e.g. 8,500"],["monthly_fuel_cost_inr","Monthly fuel (optional)","e.g. 2,500"],["monthly_maintenance_cost_inr","Monthly maintenance (optional)","e.g. 1,000"],["annual_insurance_cost_inr","Annual insurance (optional)","e.g. 12,000"]],
+    life_insurance: [["monthly_premium_inr","Monthly premium quote (optional)","e.g. 1,500"],["coverage_amount_inr","Coverage amount (optional)","e.g. 10,000,000"],["monthly_income_inr","Monthly income (optional)","e.g. 60,000"]],
+    health_insurance: [["monthly_premium_inr","Monthly premium quote (optional)","e.g. 1,200"],["coverage_amount_inr","Sum insured (optional)","e.g. 1,000,000"],["deductible_inr","Deductible (optional)","e.g. 25,000"],["copay_pct","Co-pay (%)","e.g. 10"],["monthly_income_inr","Monthly income (optional)","e.g. 50,000"]],
+    insurance: [["monthly_premium_inr","Monthly premium (optional)","e.g. 1,000"],["coverage_amount_inr","Coverage amount (optional)","e.g. 500,000"],["monthly_income_inr","Monthly income (optional)","e.g. 50,000"]],
+    business: [["starting_capital_inr","Initial funding / capital (optional)","e.g. 200,000"],["monthly_burn_rate_inr","Estimated monthly budget / burn (optional)","e.g. 25,000"],["current_revenue_inr","Current monthly revenue (optional, if any)","e.g. 0"]],
+    technology_future: [["productivity_index","Productivity index baseline","100"],["adoption_rate_pct","Initial adoption rate (%)","15"]],
+    personal_finance: [["monthly_income_inr","Monthly income (optional)","e.g. 50,000"],["monthly_expenses_inr","Monthly expenses (optional)","e.g. 30,000"],["savings_inr","Current savings (optional)","e.g. 100,000"]],
+    health_habit: [["habit_days_per_week","Planned days per week (optional)","e.g. 4"],["habit_sessions_completed","Sessions completed so far","0"],["habit_cost_inr","Habit-related monthly cost (optional)","e.g. 1,500"]],
+    general: [["starting_budget_inr","Starting budget (optional)","e.g. 25,000"],["available_hours_per_week","Available hours / week (optional)","e.g. 10"],["estimated_cost_inr","Estimated monthly expenses (optional)","e.g. 5,000"]]
   };
   let currentInputDomain = "";
   function renderDomainInputs(force = false) {
@@ -162,13 +177,19 @@
       if (previous[key] !== undefined) input.value = previous[key];
       wrapper.append(caption, input); container.appendChild(wrapper);
     });
-    $("domainInputHint").textContent = "Inputs tailored to " + ({stock_learning:"stock-market learning",education_career:"education vs career",vehicle:"vehicle ownership",home_finance:"home purchase and mortgage",life_insurance:"life insurance",health_insurance:"health insurance",insurance:"insurance",learning:"learning",business:"business planning",personal_finance:"personal finance",health_habit:"habits",general:"your decision"}[domain] || domain) + ". Leave unknown values blank.";
+    $("domainInputHint").textContent = "Optional inputs tailored to " + ({humor_absurd:"absurd hypotheticals",stock_learning:"stock-market learning",education_career:"education vs career",vehicle:"vehicle ownership",home_finance:"home purchase and mortgage",life_insurance:"life insurance",health_insurance:"health insurance",insurance:"insurance",learning:"learning",business:"business planning",technology_future:"technology disruption",personal_finance:"personal finance",health_habit:"habits",general:"your decision"}[domain] || domain) + ". Leave blank to let AI simulate realistic baseline estimates.";
   }
   renderDomainInputs();
   decisionInput.addEventListener("input", () => renderDomainInputs());
   function detailItems(domain, decision, scenario) {
     const common = ["What assumptions would change this outcome?", "Which costs or constraints have not been supplied?", "What evidence should be checked before committing?"];
     const byDomain = {
+      humor_absurd: [
+        "Check whether your biological warranty has expired.",
+        "Calculate whether tech trade-in value covers emergency dialysis.",
+        "Verify whether the next iPhone release date occurs before your remaining life expectancy.",
+        "Remember: Titanium bezels cannot filter metabolic waste."
+      ],
       education: ["Compare total tuition, exam fees, transport, equipment and living costs for the full course.", "Estimate time until qualification and how the degree matches your target roles.", "For the job-first path, compare take-home pay, work experience, savings and whether part-time study is realistic.", "Include the opportunity cost of studying full time versus earning now, without assuming a guaranteed salary.", "Check admission eligibility, scholarships, internships, placement reports and course accreditation.", "Try a hybrid option such as working while studying, a diploma, or deferring admission for a planned period."],
       vehicle: ["Upfront price and down payment; compare loan APR, fees, EMI and total repayment.", "Fuel based on your monthly distance and realistic mileage; include servicing, tyres and repairs.", "Insurance quote, coverage, exclusions, deductibles and renewal costs.", "Registration/tax and protective gear where applicable; estimate resale value cautiously.", "Compare buying new, buying inspected used, and delaying while saving."],
       life: ["Estimate coverage needs from dependants, debts, income replacement and future obligations.", "Compare premiums for the same coverage and duration; verify whether premiums can change.", "Read exclusions, contestability terms, lapse/grace-period rules and claim requirements in the actual policy.", "Check existing employer cover and whether it continues after leaving the job.", "Compare term coverage with other product types on their actual benefits, fees and lock-ins; don't assume they are interchangeable."],
@@ -192,6 +213,7 @@
     const last = timeline.length ? timeline[timeline.length - 1].values || {} : {};
     const first = timeline.length ? timeline[0].values || {} : {};
     const detailOrder = {
+      humor_absurd: ["survival_odds_pct", "regret_index", "flex_score", "financial_ruin_risk_pct"],
       home_finance: ["monthly_mortgage_payment_inr", "total_interest_paid_inr", "loan_amount_inr", "down_payment_inr", "annual_interest_rate_pct", "loan_term_years"],
       vehicle: ["monthly_ownership_cost_inr", "cumulative_ownership_cost_inr", "monthly_emi_inr", "monthly_fuel_cost_inr", "annual_insurance_cost_inr"],
       life_insurance: ["monthly_premium_inr", "coverage_amount_inr", "annual_premium_inr", "premium_share_of_income_pct"],
@@ -210,10 +232,28 @@
       box.innerHTML = '<span>' + escape(metricName(key)) + '</span><strong>' + escape(format(value)) + '</strong><small>' + (delta === null ? "No baseline available" : "Change from first modeled month: " + escape((delta > 0 ? "+" : "") + format(delta))) + '</small>';
       highlights.appendChild(box);
     });
-    if (!entries.length) highlights.innerHTML = '<p class="dialog-muted">No numeric starting values were supplied for this scenario. The path below is qualitative until you add the relevant real-world inputs.</p>';
+    if (!entries.length) highlights.innerHTML = '<p class="dialog-muted">This path models realistic real-world dynamics and trade-offs. You can optionally provide exact numbers in the starting options to customize the baseline.</p>';
     const list = $("detailConsiderations");
     list.replaceChildren();
-    detailItems(domain, data.decision, scenario).forEach((item) => { const li = document.createElement("li"); li.textContent = item; list.appendChild(li); });
+    const items = (Array.isArray(scenario.considerations) && scenario.considerations.length > 0)
+      ? scenario.considerations
+      : detailItems(domain, data.decision, scenario);
+    items.forEach((item) => { const li = document.createElement("li"); li.textContent = item; list.appendChild(li); });
+    const wildcardsSection = $("wildcardsSection");
+    const wildcardsList = $("detailWildcards");
+    if (wildcardsSection && wildcardsList) {
+      if (Array.isArray(scenario.wildcards) && scenario.wildcards.length > 0) {
+        wildcardsList.replaceChildren();
+        scenario.wildcards.forEach((w) => {
+          const li = document.createElement("li");
+          li.textContent = w;
+          wildcardsList.appendChild(li);
+        });
+        wildcardsSection.hidden = false;
+      } else {
+        wildcardsSection.hidden = true;
+      }
+    }
     const timelineBox = $("detailTimeline");
     timelineBox.replaceChildren();
     timeline.slice(0, 24).forEach((row) => {
@@ -315,6 +355,7 @@
    * @param {object} data Simulation response containing scenarios and domain context.
    */
   function renderScenarios(data) {
+    registerMetrics(data.metrics);
     const scenarios = Array.isArray(data.scenarios) ? data.scenarios : [];
     scenarioGrid.replaceChildren();
     scenarios.forEach((scenario, index) => {
@@ -329,18 +370,22 @@
         stock_learning: ["study_hours_per_week", "paper_trading_sessions", "strategies_tested", "concepts_practiced", "learning_cost_inr"],
         education_career: ["cumulative_education_cost_inr", "cumulative_earnings_inr", "study_hours_per_week", "work_experience_months"],
         personal_finance: ["monthly_income_inr", "monthly_expenses_inr", "monthly_surplus_inr", "savings_inr"],
-        business: ["monthly_net_cashflow", "revenue", "customers", "cost", "cash_on_hand"],
+        business: ["monthly_burn_rate_inr", "runway_remaining_months", "monthly_net_cashflow", "revenue", "customers", "cost", "cash_on_hand"],
+        technology_future: ["productivity_index", "workforce_demand_pct", "adoption_rate_pct"],
         health_habit: ["habit_days_per_week", "habit_sessions_completed", "habit_cost_inr"],
+        humor_absurd: ["survival_odds_pct", "regret_index", "flex_score", "financial_ruin_risk_pct"],
         learning: ["study_hours_per_week", "projects_completed", "skills_practiced", "learning_cost_inr"],
-        general: ["revenue", "customers", "cost"]
+        general: ["trajectory_index", "resource_load", "feasibility_pct", "revenue", "customers", "cost"]
       };
       const domain = data.domain || decisionDomain(data.decision);
       const preferred = preferredByDomain[domain] || preferredByDomain.general;
-      const keys = preferred.filter((key) => Object.prototype.hasOwnProperty.call(final, key) && number(final[key]) !== null && (number(final[key]) !== 0 || number(start[key]) !== 0)).slice(0, 2);
+      const customKeys = (data.metrics || []).map((m) => m.key);
+      const combinedPreferred = [...new Set([...customKeys, ...preferred])];
+      const keys = combinedPreferred.filter((key) => Object.prototype.hasOwnProperty.call(final, key) && number(final[key]) !== null && (number(final[key]) !== 0 || number(start[key]) !== 0)).slice(0, 3);
       const stats = keys.map((key) => {
         const baseline = start[key];
         const delta = number(final[key]) !== null && number(baseline) !== null ? final[key] - baseline : null;
-        const money = /inr/.test(key);
+        const money = /inr|usd|cost|revenue|burn|price|premium|budget|savings/i.test(key);
         const shown = (money ? "₹" : "") + compact(final[key]);
         const changed = delta !== null && Math.abs(delta) > 0.000001;
         return '<div><span class="stat-label">' + escape(metricName(key)) + '</span><span class="stat-value">' + escape(shown) + '</span><span class="stat-delta">' + (changed ? escape((delta > 0 ? "+" : "") + (money ? "₹" : "") + compact(delta) + " modeled change") : "Held constant in this scenario") + '</span></div>';
@@ -353,9 +398,9 @@
       const copy = scenarioCopy(scenario);
       const card = document.createElement("article");
       card.className = "scenario-card";
-      card.innerHTML = '<div class="scenario-top"><span class="scenario-index">PATH / ' + String(index + 1).padStart(2, "0") + '</span><span class="scenario-tag">' + branchTag(scenario.name || scenario.assumption) + '</span></div>' +
+      card.innerHTML = '<div class="scenario-top"><span class="scenario-index">PATH / ' + String(index + 1).padStart(2, "0") + '</span><span class="scenario-tag">' + branchTag(scenario.name || scenario.assumption, scenario) + '</span></div>' +
         '<h3>' + escape(title(copy.heading || "Alternative path")) + '</h3><p class="scenario-assumption">' + escape(copy.summary || "A possible path based on the decision.") + '</p>' +
-        '<div class="scenario-stats">' + (stats || '<p class="scenario-assumption">Add numeric starting values to compare metrics.</p>') + '</div>' +
+        '<div class="scenario-stats">' + (stats || '<p class="scenario-assumption">Simulated trajectory across key real-world indicators.</p>') + '</div>' +
         '<button class="details-button" type="button">EXPLORE THIS POSSIBILITY <span>↗</span></button>' +
         '<button class="timeline-button" type="button" aria-expanded="false"><span>VIEW TIMELINE · ' + (scenario.timeline || []).length + ' MONTHS</span><span>＋</span></button>' +
         '<div class="timeline-details" hidden>' + (timelineRows || '<p class="scenario-assumption">No timeline details were returned.</p>') + '</div>';
@@ -422,6 +467,7 @@
       insurance: ["monthly_premium_inr", "coverage_amount_inr", "annual_premium_inr", "cumulative_premium_paid_inr"],
       personal_finance: ["monthly_income_inr", "monthly_expenses_inr", "monthly_surplus_inr", "savings_inr"],
       health_habit: ["habit_days_per_week", "habit_sessions_completed", "habit_cost_inr"],
+      humor_absurd: ["survival_odds_pct", "regret_index", "flex_score", "financial_ruin_risk_pct"],
       business: ["revenue", "customers", "cost"],
       general: ["revenue", "customers", "cost"]
     };
@@ -435,7 +481,7 @@
     drawChart();
   }
   function showChartEmpty(message) {
-    chart.innerHTML = '<text x="450" y="130" fill="#c9f27a" font-size="14" text-anchor="middle">' + escape(message) + '</text><text x="450" y="157" fill="#8290a0" font-size="11" text-anchor="middle">Add relevant starting values to compare a numeric trajectory.</text>';
+    chart.innerHTML = '<text x="450" y="130" fill="#c9f27a" font-size="14" text-anchor="middle">' + escape(message) + '</text><text x="450" y="157" fill="#8290a0" font-size="11" text-anchor="middle">Select a metric from the dropdown above to view the timeline comparison.</text>';
     $("chartLegend").replaceChildren();
   }
   /**

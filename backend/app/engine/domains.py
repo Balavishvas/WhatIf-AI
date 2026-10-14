@@ -13,6 +13,8 @@ DOMAIN_LABELS = {
     "health_insurance": "Health insurance",
     "insurance": "Insurance comparison",
     "business": "Business planning",
+    "technology_future": "AI and technology disruption",
+    "humor_absurd": "Humorous & Absurd Possibilities",
     "personal_finance": "Personal finance",
     "health_habit": "Health and habits",
     "general": "General decision",
@@ -94,12 +96,34 @@ METRIC_CATALOG: dict[str, list[dict[str, str]]] = {
         {"key": "habit_sessions_completed", "label": "Sessions completed", "unit": "sessions", "kind": "plan"},
         {"key": "habit_cost_inr", "label": "Habit-related cost (INR)", "unit": "INR", "kind": "input"},
     ],
-    "general": [],
+    "technology_future": [
+        {"key": "productivity_index", "label": "Productivity Index (Base=100)", "unit": "index", "kind": "calculated"},
+        {"key": "workforce_demand_pct", "label": "Workforce Demand (% vs baseline)", "unit": "%", "kind": "calculated"},
+        {"key": "adoption_rate_pct", "label": "Technology Adoption Rate (%)", "unit": "%", "kind": "calculated"},
+    ],
+    "humor_absurd": [
+        {"key": "survival_odds_pct", "label": "Survival Odds (%)", "unit": "%", "kind": "calculated"},
+        {"key": "regret_index", "label": "Instant Regret Index", "unit": "index", "kind": "calculated"},
+        {"key": "flex_score", "label": "Social Flex / Clout Score", "unit": "index", "kind": "calculated"},
+        {"key": "financial_ruin_risk_pct", "label": "Total Ruin Risk (%)", "unit": "%", "kind": "calculated"},
+    ],
+    "general": [
+        {"key": "trajectory_index", "label": "Trajectory Index (Base=100)", "unit": "index", "kind": "calculated"},
+        {"key": "resource_load", "label": "Resource / Effort Load", "unit": "units", "kind": "cost"},
+        {"key": "feasibility_pct", "label": "Feasibility & Stability (%)", "unit": "%", "kind": "plan"},
+    ],
 }
 
 
 def classify_domain(decision: str) -> str:
     text = re.sub(r"\s+", " ", decision.lower()).strip()
+    if any(p in text for p in (
+        "kidney", "kideney", "sell organ", "sell my organ", "fight 100", "fight a bear", "fight a kangaroo",
+        "marry chatgpt", "marry my robot", "zombie", "alien invasion", "rob a bank", "become a pirate",
+        "eat 100", "only instant noodles", "fake my death", "punch a", "sleep for 10 years",
+        "jump into a black hole"
+    )):
+        return "humor_absurd"
     if any(p in text for p in ("life insurance", "term insurance", "life cover", "life coverage")):
         return "life_insurance"
     if any(p in text for p in ("health insurance", "medical insurance", "mediclaim", "hospitalization cover")):
@@ -114,10 +138,14 @@ def classify_domain(decision: str) -> str:
         return "home_finance"
     if any(p in text for p in ("motorcycle", "motorbike", "bike", "scooter", "car", "vehicle", "600 cc", "600cc", "commuting", "emi")):
         return "vehicle"
+    if any(p in text for p in ("automate", "automation", "ai replaces", "ai automates", "future of work", "disrupt", "universal basic income", "ubi", "agi")):
+        return "technology_future"
+    if any(p in text for p in ("quit my job", "leave my job", "quit job", "resign")) and any(p in text for p in ("start", "build", "company", "startup", "business", "agency", "venture", "founder")):
+        return "business"
+    if any(p in text for p in ("business", "startup", "company", "firm", "agency", "venture", "saas", "customer", "revenue", "marketing", "sales", "hire", "employee", "founder", "client", "monetize")):
+        return "business"
     if any(p in text for p in ("learn", "learning", "study", "skill", "course", "practice", "project", "portfolio", "certification", "education")):
         return "learning"
-    if any(p in text for p in ("business", "startup", "customer", "revenue", "marketing", "sales", "hire", "employee")):
-        return "business"
     if any(p in text for p in ("income", "salary", "savings", "saving", "budget", "expense", "spend", "debt", "loan", "invest")):
         return "personal_finance"
     if any(p in text for p in ("eat", "food", "diet", "exercise", "workout", "habit", "sleep", "fasting")):
@@ -161,4 +189,8 @@ def domain_assumptions(domain: str, values: dict[str, float]) -> list[str]:
         assumptions.append("Net cash flow is calculated from the supplied revenue and operating-cost figures; it does not include unprovided taxes, financing, working capital or one-off costs.")
     elif domain == "stock_learning":
         assumptions.append("No trading profit or investment return is forecast. Metrics represent learning plans and paper-trading practice only.")
+    elif domain == "humor_absurd":
+        assumptions.append("Biological organs are non-refundable and are not covered under AppleCare warranty.")
+        assumptions.append("Darwin Awards eligibility is significantly heightened for this hypothetical branch.")
+        assumptions.append("Purely satirical scenario simulation: do not trade vital organs or attempt dangerous stunts in reality.")
     return assumptions

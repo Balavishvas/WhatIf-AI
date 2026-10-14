@@ -198,3 +198,27 @@ def test_delayed_home_purchase_has_no_active_mortgage():
     assert values["monthly_mortgage_payment_inr"] == 0.0
     assert values["total_interest_paid_inr"] == 0.0
     assert any("No mortgage is started" in event for event in scenarios[0].timeline[0].events)
+
+
+def test_humor_absurd_domain_classification_and_simulation():
+    assert classify_domain("what if i sell my kideney to buy new iphone 18") == "humor_absurd"
+    assert classify_domain("what if I fight a bear with my bare hands") == "humor_absurd"
+    
+    metadata = domain_metadata("what if i sell my kidney to buy new iphone 18")
+    keys = {m["key"] for m in metadata["metrics"]}
+    assert "survival_odds_pct" in keys
+    assert "regret_index" in keys
+
+    scenarios = run_simulation(
+        initial_state={},
+        branches=[
+            "Sell kidney for iPhone: enjoy 4K hospital selfies until the iPhone 19 renders your sacrifice obsolete",
+            "Keep both kidneys: retain basic biological filtration and use your current phone",
+        ],
+        months=3,
+        decision="what if i sell my kidney to buy new iphone 18",
+    )
+    assert len(scenarios) == 2
+    assert "survival_odds_pct" in scenarios[0].timeline[-1].values
+    assert "regret_index" in scenarios[0].timeline[-1].values
+
