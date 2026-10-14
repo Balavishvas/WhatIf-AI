@@ -128,7 +128,17 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
         branch_term = re.search(r"\b(10|15|20|25|30)\s*[- ]?year", branch_text)
         if branch_term:
             years = float(branch_term.group(1))
-        delayed_purchase = any(word in branch_text for word in ("delay buying", "delay the home", "save a larger down payment", "postpone the purchase"))
+        delayed_purchase = any(
+            phrase in branch_text
+            for phrase in (
+                "delay buying",
+                "delay the home",
+                "delay the purchase",
+                "save a larger down payment",
+                "postpone the purchase",
+                "defer the purchase",
+            )
+        )
         if delayed_purchase:
             loan = 0.0
         rate_is_known = rate_pct > 0

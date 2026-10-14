@@ -176,3 +176,25 @@ def test_mortgage_does_not_assume_zero_interest_when_rate_is_missing():
     assert values["monthly_mortgage_payment_inr"] == 0.0
     assert values["total_interest_paid_inr"] == 0.0
     assert any("Enter loan amount" in event for event in scenarios[0].timeline[0].events)
+
+
+def test_delayed_home_purchase_has_no_active_mortgage():
+    """Ensure the generated delayed-purchase path does not retain mortgage payments."""
+    scenarios = run_simulation(
+        initial_state={
+            "home_price_inr": 4_000_000,
+            "down_payment_inr": 1_000_000,
+            "loan_amount_inr": 3_000_000,
+            "annual_interest_rate_pct": 8.5,
+            "loan_term_years": 20,
+        },
+        branches=["Delay The Purchase To Save For A Larger Down Payment And Improve Debt-To-Income Ratios"],
+        months=12,
+        decision="What if I buy a home with a mortgage?",
+    )
+
+    values = scenarios[0].timeline[0].values
+    assert values["loan_amount_inr"] == 0.0
+    assert values["monthly_mortgage_payment_inr"] == 0.0
+    assert values["total_interest_paid_inr"] == 0.0
+    assert any("No mortgage is started" in event for event in scenarios[0].timeline[0].events)
