@@ -188,7 +188,18 @@
     const timeline = scenario.timeline || [];
     const last = timeline.length ? timeline[timeline.length - 1].values || {} : {};
     const first = timeline.length ? timeline[0].values || {} : {};
-    const entries = Object.entries(last).slice(0, 6);
+    const detailOrder = {
+      home_finance: ["monthly_mortgage_payment_inr", "total_interest_paid_inr", "loan_amount_inr", "down_payment_inr", "annual_interest_rate_pct", "loan_term_years"],
+      vehicle: ["monthly_ownership_cost_inr", "cumulative_ownership_cost_inr", "monthly_emi_inr", "monthly_fuel_cost_inr", "annual_insurance_cost_inr"],
+      life_insurance: ["monthly_premium_inr", "coverage_amount_inr", "annual_premium_inr", "premium_share_of_income_pct"],
+      health_insurance: ["monthly_premium_inr", "coverage_amount_inr", "deductible_inr", "copay_pct"],
+      stock_learning: ["study_hours_per_week", "paper_trading_sessions", "strategies_tested", "concepts_practiced", "learning_cost_inr"],
+      education_career: ["cumulative_education_cost_inr", "cumulative_earnings_inr", "study_hours_per_week", "work_experience_months"],
+      personal_finance: ["monthly_surplus_inr", "savings_inr", "monthly_income_inr", "monthly_expenses_inr"],
+      business: ["monthly_net_cashflow", "revenue", "customers", "cost", "cash_on_hand"]
+    };
+    const order = detailOrder[domain] || Object.keys(last);
+    const entries = order.filter((key) => Object.prototype.hasOwnProperty.call(last, key) && number(last[key]) !== null && (last[key] !== 0 || first[key] !== 0)).slice(0, 6).map((key) => [key, last[key]]);
     if (entries.length) entries.forEach(([key, value]) => {
       const box = document.createElement("div");
       box.className = "detail-highlight";
