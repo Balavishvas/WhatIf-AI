@@ -117,6 +117,7 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
         state.values.setdefault("down_payment_inr", 0.0)
         state.values.setdefault("loan_amount_inr", 0.0)
         state.values.setdefault("annual_interest_rate_pct", 0.0)
+        state.values.setdefault("annual_interest_rate_specified", 0.0)
         state.values.setdefault("loan_term_years", 0.0)
         price = max(0.0, state.values["home_price_inr"])
         down = max(0.0, state.values["down_payment_inr"])
@@ -130,9 +131,10 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
         delayed_purchase = any(word in branch_text for word in ("delay buying", "delay the home", "save a larger down payment", "postpone the purchase"))
         if delayed_purchase:
             loan = 0.0
+        rate_is_known = state.values["annual_interest_rate_specified"] > 0 or rate_pct > 0
         monthly_payment = 0.0
         total_interest = 0.0
-        if loan > 0 and years > 0:
+        if loan > 0 and years > 0 and rate_is_known:
             n = int(round(years * 12))
             monthly_rate = rate_pct / 1200.0
             if monthly_rate == 0:
@@ -151,7 +153,7 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
             events = []
             if delayed_purchase:
                 events.append("No mortgage is started in this path; it compares delaying the purchase, not a numeric savings forecast.")
-            elif loan > 0 and years > 0:
+            elif loan > 0 and years > 0 and rate_is_known:
                 events.append(f"Estimated fixed-rate monthly principal-and-interest payment: ₹{monthly_payment:,.0f}; rate {rate_pct:g}% per year over {years:g} years.")
                 events.append(f"Estimated total interest over the full loan term: ₹{total_interest:,.0f}, excluding fees and taxes.")
             else:
