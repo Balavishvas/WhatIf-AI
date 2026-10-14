@@ -289,7 +289,7 @@
     if (colon > 0 && colon < 72) {
       return { heading: rawName.slice(0, colon).trim(), summary: rawName.slice(colon + 1).trim() || rawSummary };
     }
-    const heading = rawName.length > 76 ? rawName.slice(0, 73).replace(/\\s+\\S*$/, "") + "…" : rawName;
+    const heading = rawName.length > 76 ? rawName.slice(0, 73).replace(/\s+\S*$/, "") + "…" : rawName;
     const summary = rawSummary && rawSummary.toLowerCase() !== rawName.toLowerCase()
       ? rawSummary
       : (rawName.length > heading.length ? rawName : "A possible approach. Open this path to review trade-offs, assumptions and its timeline.");
