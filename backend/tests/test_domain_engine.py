@@ -147,6 +147,7 @@ def test_mortgage_domain_is_classified_before_generic_loan():
 
 
 def test_simulation_blocks_prolonged_food_restriction_scenarios():
+    """Ensure prolonged food-restriction requests do not produce simulated outcomes."""
     response = client.post(
         "/simulate",
         json={
