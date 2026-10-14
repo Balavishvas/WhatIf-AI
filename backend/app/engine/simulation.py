@@ -80,6 +80,7 @@ def _monthly_rate(key: str, decision_type: str) -> float:
 
 
 def simulate(initial_state: dict[str, float], branch: str, months: int, decision: str = "") -> Scenario:
+    """Build a monthly scenario timeline using the selected domain's modeling rules."""
     state = WorldState(initial_state)
     timeline: list[StateSnapshot] = []
     decision_type = _decision_type(decision)
@@ -130,9 +131,10 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
         delayed_purchase = any(word in branch_text for word in ("delay buying", "delay the home", "save a larger down payment", "postpone the purchase"))
         if delayed_purchase:
             loan = 0.0
+        rate_is_known = rate_pct > 0
         monthly_payment = 0.0
         total_interest = 0.0
-        if loan > 0 and years > 0:
+        if loan > 0 and years > 0 and rate_is_known:
             n = int(round(years * 12))
             monthly_rate = rate_pct / 1200.0
             if monthly_rate == 0:
@@ -151,7 +153,7 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
             events = []
             if delayed_purchase:
                 events.append("No mortgage is started in this path; it compares delaying the purchase, not a numeric savings forecast.")
-            elif loan > 0 and years > 0:
+            elif loan > 0 and years > 0 and rate_is_known:
                 events.append(f"Estimated fixed-rate monthly principal-and-interest payment: ₹{monthly_payment:,.0f}; rate {rate_pct:g}% per year over {years:g} years.")
                 events.append(f"Estimated total interest over the full loan term: ₹{total_interest:,.0f}, excluding fees and taxes.")
             else:
@@ -356,4 +358,5 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
 
 
 def run_simulation(initial_state: dict[str, float], branches: list[str], months: int, decision: str = "") -> list[Scenario]:
+    """Run the simulation for each branch and return the resulting scenarios."""
     return [simulate(initial_state, branch, months, decision) for branch in branches]

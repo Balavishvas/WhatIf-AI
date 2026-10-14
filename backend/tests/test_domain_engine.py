@@ -161,3 +161,18 @@ def test_simulation_blocks_prolonged_food_restriction_scenarios():
     data = response.json()
     assert data["scenarios"] == []
     assert "healthcare professional" in data["safety_notice"]
+
+
+def test_mortgage_does_not_assume_zero_interest_when_rate_is_missing():
+    """Avoid presenting a zero-interest payment as a mortgage estimate without a rate."""
+    scenarios = run_simulation(
+        initial_state={"loan_amount_inr": 3_000_000, "loan_term_years": 20},
+        branches=["Choose a 20-year mortgage"],
+        months=1,
+        decision="What if I buy a home with a mortgage?",
+    )
+
+    values = scenarios[0].timeline[0].values
+    assert values["monthly_mortgage_payment_inr"] == 0.0
+    assert values["total_interest_paid_inr"] == 0.0
+    assert any("Enter loan amount" in event for event in scenarios[0].timeline[0].events)
