@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import re
 
 from ..models import Scenario, StateSnapshot
 from .state import WorldState
@@ -123,7 +124,7 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
         rate_pct = max(0.0, state.values["annual_interest_rate_pct"])
         years = max(0.0, state.values["loan_term_years"])
         branch_text = branch.lower()
-        branch_term = __import__("re").search(r"\b(10|15|20|25|30)\s*[- ]?year", branch_text)
+        branch_term = re.search(r"\b(10|15|20|25|30)\s*[- ]?year", branch_text)
         if branch_term:
             years = float(branch_term.group(1))
         delayed_purchase = any(word in branch_text for word in ("delay buying", "delay the home", "save a larger down payment", "postpone the purchase"))
@@ -147,7 +148,9 @@ def simulate(initial_state: dict[str, float], branch: str, months: int, decision
         for month in range(1, months + 1):
             updated = state.snapshot()
             events = []
-            if loan > 0 and years > 0:
+            if delayed_purchase:
+                events.append("No mortgage is started in this path; it compares delaying the purchase, not a numeric savings forecast.")
+            elif loan > 0 and years > 0:
                 events.append(f"Estimated fixed-rate monthly principal-and-interest payment: ₹{monthly_payment:,.0f}; rate {rate_pct:g}% per year over {years:g} years.")
                 events.append(f"Estimated total interest over the full loan term: ₹{total_interest:,.0f}, excluding fees and taxes.")
             else:
