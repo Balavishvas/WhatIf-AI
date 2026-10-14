@@ -1,3 +1,4 @@
+/** Initialize the simulation form, saved results, API health checks, and charts. */
 (() => {
   "use strict";
   const API_BASE = String(window.WHATIF_API_BASE || "http://127.0.0.1:8000").replace(/\/$/, "");
@@ -309,6 +310,10 @@
     return { heading, summary };
   }
 
+  /**
+   * Render scenario cards with domain-specific stats and expandable timelines.
+   * @param {object} data Simulation response containing scenarios and domain context.
+   */
   function renderScenarios(data) {
     const scenarios = Array.isArray(data.scenarios) ? data.scenarios : [];
     scenarioGrid.replaceChildren();
@@ -383,6 +388,11 @@
     const source = items.find((item) => /scenario branch source/i.test(item));
     $("sourceLabel").textContent = source ? source.replace(/^scenario branch source:\s*/i, "").replace(/\.$/, "").toUpperCase() : "SOURCE NOT REPORTED";
   }
+  /**
+   * Populate domain-prioritized numeric metrics, preserve a valid selection, and redraw.
+   * Include derived mortgage metrics for home-finance simulations.
+   * @param {object} data Simulation response containing scenarios and domain context.
+   */
   function renderMetricOptions(data) {
     const meaningfulValues = new Map();
     (data.scenarios || []).forEach((scenario) => (scenario.timeline || []).forEach((row) => Object.entries(row.values || {}).forEach(([key, value]) => {
@@ -428,6 +438,15 @@
     chart.innerHTML = '<text x="450" y="130" fill="#c9f27a" font-size="14" text-anchor="middle">' + escape(message) + '</text><text x="450" y="157" fill="#8290a0" font-size="11" text-anchor="middle">Add relevant starting values to compare a numeric trajectory.</text>';
     $("chartLegend").replaceChildren();
   }
+  /**
+   * Read a numeric metric or derive cumulative payments or a fixed-rate loan balance.
+   * Balance calculations clamp elapsed months to the loan term and handle zero interest.
+   * @param {object} scenario Scenario associated with the row (currently unused).
+   * @param {string} key Metric identifier to read or derive.
+   * @param {number} month Elapsed month used for the derived mortgage metrics.
+   * @param {Object<string, number>} rowValues Timeline values supplying loan inputs.
+   * @returns {number|null} Derived value, finite stored value, or null for a nonnumeric stored value.
+   */
   function chartMetricValue(scenario, key, month, rowValues) {
     if (key !== "cumulative_mortgage_payments_inr" && key !== "remaining_mortgage_balance_inr") return number(rowValues?.[key]);
     const values = rowValues || {};
@@ -444,6 +463,10 @@
     const balance = loan * factor - payment * ((factor - 1) / rate);
     return Math.max(0, balance);
   }
+  /**
+   * Draw the selected metric across the latest scenarios, including derived mortgage values.
+   * Update the chart note and legend, or show an empty state when no data is available.
+   */
   function drawChart() {
     const scenarios = latestResponse?.scenarios || [];
     const key = metricSelect.value;
