@@ -80,6 +80,7 @@ def _monthly_rate(key: str, decision_type: str) -> float:
 
 
 def simulate(initial_state: dict[str, float], branch: str, months: int, decision: str = "") -> Scenario:
+    """Build a monthly scenario timeline using the selected domain's modeling rules."""
     state = WorldState(initial_state)
     timeline: list[StateSnapshot] = []
     decision_type = _decision_type(decision)
