@@ -87,6 +87,7 @@ def test_falls_back_to_local_rules_when_gemini_fails(monkeypatch):
 
 
 def test_gemini_extraction_preserves_selected_horizon_when_decision_has_no_duration(monkeypatch):
+    """Keep the UI-selected horizon when Gemini returns its default duration."""
     import json
     import sys
     from types import SimpleNamespace
@@ -113,6 +114,7 @@ def test_gemini_extraction_preserves_selected_horizon_when_decision_has_no_durat
 
 
 def test_explicit_decision_duration_overrides_selected_horizon(monkeypatch):
+    """Prefer a duration explicitly stated by the user over the UI selection."""
     import json
     import sys
     from types import SimpleNamespace
