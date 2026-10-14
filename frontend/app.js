@@ -382,8 +382,14 @@
     $("sourceLabel").textContent = source ? source.replace(/^scenario branch source:\s*/i, "").replace(/\.$/, "").toUpperCase() : "SOURCE NOT REPORTED";
   }
   function renderMetricOptions(data) {
-    const keys = new Set();
-    (data.scenarios || []).forEach((scenario) => (scenario.timeline || []).forEach((row) => Object.keys(row.values || {}).forEach((key) => keys.add(key))));
+    const meaningfulValues = new Map();
+    (data.scenarios || []).forEach((scenario) => (scenario.timeline || []).forEach((row) => Object.entries(row.values || {}).forEach(([key, value]) => {
+      if (number(value) !== null) {
+        if (!meaningfulValues.has(key)) meaningfulValues.set(key, []);
+        meaningfulValues.get(key).push(value);
+      }
+    })));
+    const keys = new Set([...meaningfulValues.entries()].filter(([, values]) => values.some((value) => Math.abs(value) > 0.000001)).map(([key]) => key));
     const previous = metricSelect.value;
     metricSelect.replaceChildren(new Option("Choose metric", ""));
     // Put decision-relevant progress metrics first; financial metrics should not
