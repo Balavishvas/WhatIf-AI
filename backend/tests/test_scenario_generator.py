@@ -138,3 +138,30 @@ def test_explicit_decision_duration_overrides_selected_horizon(monkeypatch):
     extracted = decision_extractor.extract_decision("What if I learn AI for 6 months?", months=12)
 
     assert extracted.horizon_months == 6
+
+
+def test_spelled_out_duration_overrides_selected_horizon(monkeypatch):
+    """Recognize month durations written as words in user decisions."""
+    import json
+    import sys
+    from types import SimpleNamespace
+
+    from app.ai import decision_extractor
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    payload = {
+        "goal": "Learn AI",
+        "action": "Learn AI for six months",
+        "horizon_months": 3,
+        "variables": {},
+        "constraints": [],
+        "assumptions": [],
+    }
+    fake_response = SimpleNamespace(text=json.dumps(payload))
+    fake_client = SimpleNamespace(models=SimpleNamespace(generate_content=lambda **kwargs: fake_response))
+    fake_genai = SimpleNamespace(Client=lambda **kwargs: fake_client)
+    monkeypatch.setitem(sys.modules, "google", SimpleNamespace(genai=fake_genai))
+
+    extracted = decision_extractor.extract_decision("What if I learn AI for six months?", months=12)
+
+    assert extracted.horizon_months == 6
