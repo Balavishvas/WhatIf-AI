@@ -40,9 +40,9 @@ _NUMBER_WORDS = {
 def _parse_horizon_months(text: str) -> int | None:
     """Parse numeric or spelled-out month durations, bounded to the supported horizon."""
     match = re.search(
-        r"\\b(\\d{1,2}|twenty[- ]four|twenty[- ]three|twenty[- ]two|twenty[- ]one|"
+        r"\b(\d{1,2}|twenty[- ]four|twenty[- ]three|twenty[- ]two|twenty[- ]one|"
         r"twenty|nineteen|eighteen|seventeen|sixteen|fifteen|fourteen|thirteen|"
-        r"twelve|eleven|ten|nine|eight|seven|six|five|four|three|two|one)\\s*(?:months?|mos?)\\b",
+        r"twelve|eleven|ten|nine|eight|seven|six|five|four|three|two|one)\s*(?:months?|mos?)\b",
         text.lower(),
     )
     if not match:
@@ -70,8 +70,8 @@ assumptions: array of strings
 def _fallback_extract(decision: str, months: int) -> ExtractedDecision:
     """Extract clear values locally and use labelled starter metrics for learning scenarios."""
     text = decision.lower()
-    horizon_match = re.search(r"\b(\d{1,2})\s*(?:months?|mos?)\b", text)
-    horizon = max(1, min(24, int(horizon_match.group(1)))) if horizon_match else months
+    horizon_match = _parse_horizon_months(text)
+    horizon = horizon_match if horizon_match is not None else max(1, min(24, months))
     variables: dict[str, float] = {}
     assumptions: list[str] = []
 
@@ -204,10 +204,10 @@ def extract_decision(decision: str, months: int = 3) -> ExtractedDecision:
             )
             data: Any = json.loads(response.text)
             extracted = ExtractedDecision.model_validate(data)
-            horizon_match = re.search(r"\b(\d{1,2})\s*(?:months?|mos?)\b", decision.lower())
-            if horizon_match:
+            horizon_match = _parse_horizon_months(decision)
+            if horizon_match is not None:
                 # An explicit duration in the user's wording takes precedence over UI defaults.
-                extracted.horizon_months = max(1, min(24, int(horizon_match.group(1))))
+                extracted.horizon_months = horizon_match
             else:
                 # If the user did not state a duration, preserve the duration selected in the UI.
                 extracted.horizon_months = max(1, min(24, months))
